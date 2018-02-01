@@ -1,1 +1,4 @@
-/data/
+/data/semeval/
+/data/sensor/
+/data/util/
+data/__pycache__/
