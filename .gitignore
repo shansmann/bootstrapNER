@@ -1,4 +1,5 @@
-/data/semeval/
-/data/sensor/
+/data/semeval/original/
+/data/semeval/self_labeled/
+/data/sensor/*
 /data/util/
 data/__pycache__/
