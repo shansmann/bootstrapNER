@@ -3,10 +3,10 @@ import os
 from os.path import basename
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.punkt import PunktSentenceTokenizer
-
+import config
 
 class Word:
-	def __init__(self, word, start, end, entity = 'O'):
+	def __init__(self, word, start, end, entity = config.OTHER_ENTITY):
 		self.word = word
 		self.start = int(start)
 		self.end = int(end)

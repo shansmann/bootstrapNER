@@ -1,4 +1,9 @@
 from objects import Word, Annotation, Document, DataCollection
+import logging, coloredlogs
+import config
+
+coloredlogs.install()
+
 
 class Processor:
 	def __init__(self, DataCollection):
@@ -46,7 +51,12 @@ class AnnProcessor(Processor):
 						#TODO: check for annotation overlap!
 						for anno in annos:
 							if token.start >= anno.start and token.end <= anno.end:
-								token.entity = anno.entity
+								if token.word in anno.word:
+									if token.entity is not config.OTHER_ENTITY:
+										logging.warning('overriding token: {} with {}'.format(token.entity, anno.entity))
+									token.entity = anno.entity
+								else:
+									logging.warning('annotation and indices do not match! Word:{} Annotation:{}'.format(token.word, anno.word))
 						if (token.start - 1) in (document.sentence_breaks):
 							record_file.write('\n')
 						else:
