@@ -1,5 +1,5 @@
 /data/semeval/original/
 /data/semeval/self_labeled/
 /data/sensor/*
-/data/util/
+/data/concept_net/*.txt
 data/__pycache__/

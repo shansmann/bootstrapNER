@@ -51,7 +51,7 @@ class DataCollection:
 	def parse_input_data(self, path):
 		docs = []
 		for filename in glob.glob(os.path.join(path, '*.txt')):
-			file = open(filename, "r")
+			file = open(filename, 'r')
 			base_name = basename(filename).split('.')[0]
 			file_content = file.read()
 			words = []
