@@ -1,5 +1,8 @@
 import glob
 import os
+import avro.schema
+from avro.datafile import DataFileReader, DataFileWriter
+from avro.io import DatumReader, DatumWriter
 from os.path import basename
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.punkt import PunktSentenceTokenizer
@@ -65,4 +68,33 @@ class DataCollection:
 
 			file.close()
 
+		self.documents = docs
+
+
+class AvroCollection(DataCollection):
+	def parse_input_data(self, path):
+		docs = []
+		reader = DataFileReader(open(path, 'rb'), DatumReader())
+		for document in reader:
+			file_content = document['text']
+			id = document['id']
+			words = []
+			sentence_breaks = []
+			for token in document['tokens']:
+				start = token['span']['start']
+				end = token['span']['end']
+				word = token['lemma']
+				entity = token['ner']
+				if entity:
+					words.append(Word(word, start, end, entity))
+				else:
+					words.append(Word(word, start, end))
+			for sentence in document['sentences']:
+				#start = sentence['span']['start']
+				end = sentence['span']['end']
+				#TODO: ask for conceptMentions (which concepts?)
+				sentence_breaks.append(end)
+			doc = Document(document['id'], sentence_breaks, words, file_content)
+			docs.append(doc)
+		reader.close()
 		self.documents = docs

@@ -83,3 +83,22 @@ class HeuristikProcessor(Processor):
 
 	def create_conll_format(self):
 		pass
+
+
+class AvroProcessor(Processor):
+	def create_conll_format(self, outpath=''):
+		for document in self.data_collection.documents:
+			if outpath:
+				with open(outpath, 'w') as record_file:
+					for token in document.tokens:
+						if (token.start - 1) in (document.sentence_breaks):
+							record_file.write('\n')
+						else:
+							line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
+							record_file.write(line)
+			else:
+				for token in document.tokens:
+					if (token.start - 1) in (document.sentence_breaks):
+						print()
+					else:
+						print(token.entity, token.start, token.end, token.word)
