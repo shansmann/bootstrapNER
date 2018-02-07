@@ -2,4 +2,5 @@
 /data/semeval/self_labeled/
 /data/sensor/*
 /data/concept_net/*.txt
+/data/concept_net/*.tsv
 data/__pycache__/
