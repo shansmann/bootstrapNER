@@ -39,42 +39,29 @@ class AnnProcessor(Processor):
 		f_anno.close()
 		return annos
 
-	def create_conll_format(self, outpath=''):
-		for document in self.data_collection.documents:
-			# load ann file
-			ann_path = str(self.annotation_path + document.id + '.ann')
-			annos = self.load_ann_file(ann_path)
-			if outpath:
-				with open(outpath, 'w') as record_file:
-					for token in document.tokens:
-						# check annotations
-						for anno in annos:
-							# check indices
-							if token.start >= anno.start and token.end <= anno.end:
-								# check words
-								if token.word in anno.word:
-									if token.entity is not config.OTHER_ENTITY:
-										# TODO: how to deal with annotation overlap?
-										logging.warning('overriding token: {} with {}'.format(token.entity, anno.entity))
-									token.entity = anno.entity
-								else:
-									logging.warning('annotation and indices do not match! Word:{} Annotation:{}'.format(token.word, anno.word))
-						if (token.start - 1) in (document.sentence_breaks):
-							record_file.write('\n')
-						else:
-							line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
-							record_file.write(line)
-			else:
+	def create_conll_format(self, outpath):
+		with open(outpath, 'w') as record_file:
+			for document in self.data_collection.documents:
+				# load ann file
+				ann_path = str(self.annotation_path + document.id + '.ann')
+				annos = self.load_ann_file(ann_path)
 				for token in document.tokens:
 					# check annotations
-					#TODO: check for annotation overlap!
 					for anno in annos:
+						# check indices
 						if token.start >= anno.start and token.end <= anno.end:
-							token.entity = anno.entity
+							# check words
+							if token.word in anno.word:
+								if token.entity is not config.OTHER_ENTITY:
+									# TODO: how to deal with annotation overlap?
+									logging.warning('overriding token: {} with {}'.format(token.entity, anno.entity))
+								token.entity = anno.entity
+							else:
+								logging.warning('annotation and indices do not match! Word:{} Annotation:{}'.format(token.word, anno.word))
 					if (token.start - 1) in (document.sentence_breaks):
-						print()
-					else:
-						print(token.entity, token.start, token.end, token.word)
+						record_file.write('\n')
+					line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
+					record_file.write(line)
 
 
 class HeuristikProcessor(Processor):
@@ -86,19 +73,11 @@ class HeuristikProcessor(Processor):
 
 
 class AvroProcessor(Processor):
-	def create_conll_format(self, outpath=''):
-		for document in self.data_collection.documents:
-			if outpath:
-				with open(outpath, 'w') as record_file:
+	def create_conll_format(self, outpath):
+		with open(outpath, 'w') as record_file:
+			for document in self.data_collection.documents:
 					for token in document.tokens:
 						if (token.start - 1) in (document.sentence_breaks):
 							record_file.write('\n')
-						else:
-							line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
-							record_file.write(line)
-			else:
-				for token in document.tokens:
-					if (token.start - 1) in (document.sentence_breaks):
-						print()
-					else:
-						print(token.entity, token.start, token.end, token.word)
+						line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
+						record_file.write(line)

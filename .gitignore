@@ -5,3 +5,4 @@
 /data/concept_net/*.txt
 /data/concept_net/*.tsv
 data/__pycache__/
+__pychache__

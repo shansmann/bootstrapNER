@@ -1,8 +1,7 @@
 import glob
 import os
-import avro.schema
-from avro.datafile import DataFileReader, DataFileWriter
-from avro.io import DatumReader, DatumWriter
+from avro.datafile import DataFileReader
+from avro.io import DatumReader
 from os.path import basename
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.punkt import PunktSentenceTokenizer
@@ -83,7 +82,8 @@ class AvroCollection(DataCollection):
 			for token in document['tokens']:
 				start = token['span']['start']
 				end = token['span']['end']
-				word = token['lemma']
+				#word = token['lemma']
+				word = file_content[start:end]
 				entity = token['ner']
 				if entity:
 					words.append(Word(word, start, end, entity))
