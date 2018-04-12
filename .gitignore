@@ -1,8 +1,5 @@
-/data/semeval/original/
-/data/semeval/self_labeled/
-/data/sensor/test/*
-/data/sensor/self_labeled/*
-/data/concept_net/*.txt
-/data/concept_net/*.tsv
+/data/*/*.json
+/data/*/*.txt
+/data/*/*.tsv
 data/__pycache__/
 __pychache__

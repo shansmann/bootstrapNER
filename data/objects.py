@@ -64,7 +64,6 @@ class DataCollection:
 				sentence_breaks.append(end)
 			doc = Document(base_name, sentence_breaks, words, file_content)
 			docs.append(doc)
-
 			file.close()
 
 		self.documents = docs
@@ -82,9 +81,10 @@ class AvroCollection(DataCollection):
 			for token in document['tokens']:
 				start = token['span']['start']
 				end = token['span']['end']
+				#TODO: handle LEMMA
 				#word = token['lemma']
 				word = file_content[start:end]
-				entity = token['ner']
+				entity = token.get('ner', None)
 				if entity:
 					words.append(Word(word, start, end, entity))
 				else:
@@ -92,7 +92,6 @@ class AvroCollection(DataCollection):
 			for sentence in document['sentences']:
 				#start = sentence['span']['start']
 				end = sentence['span']['end']
-				#TODO: ask for conceptMentions (which concepts?)
 				sentence_breaks.append(end)
 			doc = Document(document['id'], sentence_breaks, words, file_content)
 			docs.append(doc)
