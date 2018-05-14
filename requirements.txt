@@ -1,3 +1,4 @@
 coloredlogs
 nltk
 avro-python3
+python-snappy

@@ -1,5 +1,10 @@
 /data/*/*.json
 /data/*/*.txt
 /data/*/*.tsv
+/data/*/*.avro
+/data/*/*.ann
+/data/*/*.gaz
+/data/*/*/*.xml
+/data/*/*/*.txt
 data/__pycache__/
 __pychache__
