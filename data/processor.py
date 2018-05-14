@@ -1,4 +1,5 @@
 import xmltodict
+from nltk.tokenize import word_tokenize
 
 from objects import Word, Annotation, Document, DataCollection
 import logging, coloredlogs
@@ -61,6 +62,7 @@ class AnnProcessor(Processor):
 		return list(unique_annos)
 
 	def create_conll_format(self, outpath):
+		ent_overlaps = 0
 		with open(outpath, 'w') as record_file:
 			for document in self.data_collection.documents:
 				# load ann file
@@ -73,20 +75,36 @@ class AnnProcessor(Processor):
 						if token.start >= anno.start and token.end <= anno.end:
 							# check words
 							if token.word in anno.word:
-								if token.entity is not config.OTHER_ENTITY:
+								# token match
+								if token.entity is config.OTHER_ENTITY:
+									# IOB encoding
+									anno_tokens = word_tokenize(anno.word)
+									if len(anno_tokens) > 1:
+										if anno.word.index(token.word) == 0:
+											prefix = 'B-'
+										else:
+											prefix = 'I-'
+									else:
+										prefix = 'B-'
+									# label token
+									token.entity = prefix + anno.entity
+								else:
 									# TODO: Token overlap for now ignored
+									ent_overlaps += 1
 									continue
 									logging.warning('problem in document: {}'.format(document.id + self.anno_ending))
 									logging.warning('overriding token: {} with {}'.format(token.entity, anno.entity))
-								token.entity = anno.entity
 							else:
+								# token mismatch
 								logging.warning('problem in document: {}'.format(document.id + self.anno_ending))
-								logging.warning('annotation and indices do not match! Word:{} Annotation:{}'.format(token.word, anno.word))
+								logging.warning(
+									'annotation and indices do not match! Word:{} Annotation:{}'.format(token.word,
+																										anno.word))
 					if (token.start - 1) in (document.sentence_breaks):
 						record_file.write('\n')
 					line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
 					record_file.write(line)
-
+		logging.info('{} entity overlaps occured.'.format(ent_overlaps))
 
 class XMLProcessor(AnnProcessor):
 	def __init__(self, DataCollection, annotation_path):
@@ -141,6 +159,7 @@ class XMLProcessor(AnnProcessor):
 					line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
 					record_file.write(line)
 	"""
+
 
 class HeuristikProcessor(Processor):
 	def __init__(self):

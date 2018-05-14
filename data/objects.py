@@ -5,17 +5,11 @@ from avro.io import DatumReader
 from os.path import basename
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.punkt import PunktSentenceTokenizer
+import logging, coloredlogs
+
 import config
 
-class Word:
-	def __init__(self, word, start, end, entity = config.OTHER_ENTITY):
-		self.word = word
-		self.start = int(start)
-		self.end = int(end)
-		self.entity = entity
-
-	def __repr__(self):
-		return str(self.__dict__)
+coloredlogs.install()
 
 
 class Annotation:
@@ -23,6 +17,31 @@ class Annotation:
 		self.word = surface
 		self.start = start
 		self.end = end
+		self.entity = entity
+
+	def __repr__(self):
+		return str(self.__dict__)
+
+
+class AnnotationCollection:
+	def __init__(self, name):
+		self.name = name
+		self.annotated_documents = []
+
+
+
+
+class AnnotatedDocument:
+	def __init__(self, id, annotations):
+		self.id = id
+		self.annotations = annotations
+
+
+class Word:
+	def __init__(self, word, start, end, entity = config.OTHER_ENTITY):
+		self.word = word
+		self.start = int(start)
+		self.end = int(end)
 		self.entity = entity
 
 	def __repr__(self):
@@ -73,16 +92,25 @@ class AvroCollection(DataCollection):
 	def parse_input_data(self, path):
 		docs = []
 		reader = DataFileReader(open(path, 'rb'), DatumReader())
+
 		for document in reader:
 			file_content = document['text']
 			id = document['id']
 			words = []
 			sentence_breaks = []
+			annos = []
+			for entity in document['conceptMentions']:
+				attributes = entity.get('attributes', None)
+				if attributes:
+					surface = entity.get('normalizedValue')
+					start = entity.get('span').get('start')
+					end = entity.get('span').get('end')
+					ent = entity.get('type')
+					annos.append(Annotation(surface, start, end, ent))
 			for token in document['tokens']:
 				start = token['span']['start']
 				end = token['span']['end']
 				#TODO: handle LEMMA
-				#word = token['lemma']
 				word = file_content[start:end]
 				entity = token.get('ner', None)
 				if entity:
@@ -90,10 +118,12 @@ class AvroCollection(DataCollection):
 				else:
 					words.append(Word(word, start, end))
 			for sentence in document['sentences']:
-				#start = sentence['span']['start']
 				end = sentence['span']['end']
 				sentence_breaks.append(end)
 			doc = Document(document['id'], sentence_breaks, words, file_content)
 			docs.append(doc)
+			if len(docs) % 5 == 0:
+				logging.info('finished {} documents.'.format(len(docs)))
+				break
 		reader.close()
 		self.documents = docs
