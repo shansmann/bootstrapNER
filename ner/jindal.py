@@ -30,10 +30,15 @@ def get_noise_dist(p):
     return phi
 
 def apply_noise(data, noise):
+    cnt = 0
     new_data = []
     phi = get_noise_dist(noise)
     for sample in data:
-        new_data.append(np.random.choice(np.arange(0, 10), p=phi[sample]))
+        val = np.random.choice(np.arange(0, 10), p=phi[sample])
+        new_data.append(val)
+        if sample != val:
+            cnt +=1
+    print('flipped {}% of labels.'.format(cnt/len(data)))
     return new_data
 
 def build_model(noise=False):
@@ -61,28 +66,20 @@ def train_model(model, x_train, y_train, x_dev, y_dev):
 def plot_noise_dists(noise, model, drop, epochs):
     phi = get_noise_dist(noise)
     weights_hidden = model.layers[-3].get_weights()[0]
-    weights_softmax = model.layers[-1].get_weights()[0]
 
-    plt.subplot(3, 1, 1)
+    plt.subplot(2, 1, 1)
     plt.imshow(phi, cmap='hot', interpolation='nearest', vmax=1, vmin=0)
     plt.xticks(np.arange(0, 10))
     plt.yticks(np.arange(0, 10))
     plt.colorbar()
     plt.title('true noise - jindal')
 
-    plt.subplot(3, 1, 2)
+    plt.subplot(2, 1, 2)
     plt.imshow(weights_hidden, cmap='hot', interpolation='nearest')
     plt.xticks(np.arange(0, 10))
     plt.yticks(np.arange(0, 10))
     plt.colorbar()
     plt.title('linear layer - jindal')
-
-    plt.subplot(3, 1, 3)
-    plt.imshow(weights_softmax, cmap='hot', interpolation='nearest')
-    plt.xticks(np.arange(0, 10))
-    plt.yticks(np.arange(0, 10))
-    plt.colorbar()
-    plt.title('softmax layer - jindal')
 
     plt.tight_layout()
     plt.savefig('noise_dist_n{}_d{}_e{}_var2.pdf'.format(noise, drop, epochs))
@@ -140,12 +137,7 @@ for layer in [0, 2, 4]:
         print(weightsAndBiases)
         print(model.layers[layer].name)
 
-model = Sequential()
-model.add(Dense(512, activation='relu', input_shape=(784,)))
-model.add(Dropout(0.2))
-model.add(Dense(512, activation='relu'))
-model.add(Dropout(0.2))
-model.add(Dense(num_classes, activation='softmax'))
+model_wo_noise = build_model(noise=False)
 
 weights0 = np.load('layer0_weights.npy')
 biases0 = np.load('layer0_bias.npy')
@@ -154,17 +146,18 @@ biases2 = np.load('layer2_bias.npy')
 weights4 = np.load('layer4_weights.npy')
 biases4= np.load('layer4_bias.npy')
 
-model.layers[0].set_weights([weights0,biases0])
-model.layers[0].trainable = False
-model.layers[2].set_weights([weights2,biases2])
-model.layers[2].trainable = False
-model.layers[4].set_weights([weights4,biases4])
-model.layers[4].trainable = False
+model_wo_noise.layers[0].set_weights([weights0,biases0])
+model_wo_noise.layers[0].trainable = False
+model_wo_noise.layers[2].set_weights([weights2,biases2])
+model_wo_noise.layers[2].trainable = False
+model_wo_noise.layers[4].set_weights([weights4,biases4])
+model_wo_noise.layers[4].trainable = False
 
-model.compile(loss='categorical_crossentropy',
+model_wo_noise.compile(loss='categorical_crossentropy',
               optimizer=RMSprop(),
               metrics=['accuracy'])
 
-score = model.evaluate(x_test, y_test, verbose=0)
+score = model_wo_noise.evaluate(x_test, y_test, verbose=0)
+
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])
