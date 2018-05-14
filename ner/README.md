@@ -14,8 +14,8 @@ Verifying Jindal's results, params for this experiment:
 | Baseline | 30% | 96% | 97% |
 | Baseline | 50% | 91% | 77% |
 | Baseline | 70% | 81% | 55% |
-| Dropout + Softmax | 30% | 97% | 98% |
-| Dropout + Softmax | 50% | 96% | 96% |
-| Dropout + Softmax | 70% | 93% | 91% |
+| Dropout + Softmax | 30% | **97%** | 98% |
+| Dropout + Softmax | 50% | **96%** | 96% |
+| Dropout + Softmax | 70% | **93%** | 91% |
 
 
