@@ -19,7 +19,7 @@ import numpy as np
 batch_size = 128
 num_classes = 10
 epochs = 20
-noise = .05
+noise = .7
 drop = .1
 seed(7)
 set_random_seed(7)
@@ -50,9 +50,9 @@ def build_model(noise=False):
     model.add(Dense(num_classes, activation='softmax', name='output'))
     if noise:
         # noise model dropout
-        model.add(Dense(num_classes, name='linear_jindal', bias=False, weights=[np.identity(10, dtype='float32')]))
+        #model.add(Dense(num_classes, name='linear_jindal', bias=False, weights=[np.identity(10, dtype='float32')]))
         model.add(Dropout(drop, name='hadamard_jindal'))
-        model.add(Dense(num_classes, name='softmax_jindal', activation='softmax'))
+        model.add(Dense(num_classes, name='softmax_jindal', activation='softmax', bias=False, weights=[np.identity(10, dtype='float32')]))
     return model
 
 def train_model(model, x_train, y_train, x_dev, y_dev):
@@ -65,27 +65,27 @@ def train_model(model, x_train, y_train, x_dev, y_dev):
 
 def plot_noise_dists(noise, model, drop, epochs):
     phi = get_noise_dist(noise)
-    weights_hidden = model.layers[-3].get_weights()[0]
+    weights_hidden = model.layers[-1].get_weights()[0]
 
     plt.subplot(2, 1, 1)
     plt.imshow(phi, cmap='hot', interpolation='nearest', vmax=1, vmin=0)
     plt.xticks(np.arange(0, 10))
     plt.yticks(np.arange(0, 10))
     plt.colorbar()
-    plt.title('true noise - jindal')
+    plt.title('true noise - jindal - noise {}%'.format(noise*100))
 
     plt.subplot(2, 1, 2)
     plt.imshow(weights_hidden, cmap='hot', interpolation='nearest')
     plt.xticks(np.arange(0, 10))
     plt.yticks(np.arange(0, 10))
     plt.colorbar()
-    plt.title('linear layer - jindal')
+    plt.title('learned noise - jindal - noise {}%'.format(noise*100))
 
     plt.tight_layout()
-    plt.savefig('noise_dist_n{}_d{}_e{}_var2.pdf'.format(noise, drop, epochs))
+    plt.savefig('noise_dist_n{}.pdf'.format(noise*100))
     plt.show()
 
-def prepare_data():
+def prepare_data(flip=True):
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
     x_train = x_train.reshape(60000, 784)
@@ -103,7 +103,8 @@ def prepare_data():
     print(x_test.shape[0], 'test samples')
 
     # flip training labels
-    y_train = apply_noise(y_train, noise)
+    if flip:
+        y_train = apply_noise(y_train, noise)
 
     # convert class vectors to binary class matrices
     y_train = np_utils.to_categorical(y_train, num_classes)
@@ -113,7 +114,7 @@ def prepare_data():
     return x_train, y_train, x_dev, y_dev, x_test, y_test
 
 
-x_train, y_train, x_dev, y_dev, x_test, y_test = prepare_data()
+x_train, y_train, x_dev, y_dev, x_test, y_test = prepare_data(flip=True)
 
 model = build_model(noise=True)
 
