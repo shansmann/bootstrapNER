@@ -19,7 +19,7 @@ import numpy as np
 batch_size = 128
 num_classes = 10
 epochs = 20
-noise = .5
+noise = .05
 drop = .1
 seed(7)
 set_random_seed(7)
@@ -67,18 +67,21 @@ def plot_noise_dists(noise, model, drop, epochs):
     plt.imshow(phi, cmap='hot', interpolation='nearest', vmax=1, vmin=0)
     plt.xticks(np.arange(0, 10))
     plt.yticks(np.arange(0, 10))
+    plt.colorbar()
     plt.title('true noise - jindal')
 
     plt.subplot(3, 1, 2)
     plt.imshow(weights_hidden, cmap='hot', interpolation='nearest')
     plt.xticks(np.arange(0, 10))
     plt.yticks(np.arange(0, 10))
+    plt.colorbar()
     plt.title('linear layer - jindal')
 
     plt.subplot(3, 1, 3)
     plt.imshow(weights_softmax, cmap='hot', interpolation='nearest')
     plt.xticks(np.arange(0, 10))
     plt.yticks(np.arange(0, 10))
+    plt.colorbar()
     plt.title('softmax layer - jindal')
 
     plt.tight_layout()
