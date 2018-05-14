@@ -8,3 +8,4 @@
 /data/*/*/*.txt
 data/__pycache__/
 __pychache__
+ner/*.npy
