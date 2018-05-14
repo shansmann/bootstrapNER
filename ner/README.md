@@ -6,7 +6,7 @@ Verifying Jindal's results, params for this experiment:
 - epochs = 20
 - dropout = 0.1
 
-&nbsp;
+
 | Model | Noise | achieved Acc. | claimed Acc. |
 | ------ | ------ | ------ | ------ |
 | Baseline | 0% | 98% | 98% |
