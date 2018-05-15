@@ -8,12 +8,14 @@ from numpy.random import seed
 from tensorflow import set_random_seed
 from keras.datasets import mnist
 from keras.models import Sequential
-from keras.layers import Dense, Dropout
+from keras.layers import Dense, Dropout, Activation
 from keras.optimizers import RMSprop
 from keras.utils import np_utils
+from keras.utils.visualize_util import plot
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import numpy as np
+
 
 # config
 batch_size = 128
@@ -29,6 +31,7 @@ def get_noise_dist(p):
     phi = (1 - p) * np.identity(10) + (p / 10) * np.ones((10, 1)) * np.ones((1, 10))
     return phi
 
+
 def apply_noise(data, noise):
     cnt = 0
     new_data = []
@@ -41,8 +44,12 @@ def apply_noise(data, noise):
     print('flipped {}% of labels.'.format(cnt/len(data)))
     return new_data
 
+
 def build_model(noise=False):
     model = Sequential()
+    #model.add(Dense(500, activation='relu', input_shape=(784,), name='hidden1'))
+    #model.add(Dense(300, activation='relu', name='hidden2'))
+    #model.add(Dense(num_classes, activation='softmax', name='output'))
     model.add(Dense(512, activation='relu', input_shape=(784,), name='hidden1'))
     model.add(Dropout(0.2))
     model.add(Dense(512, activation='relu', name='hidden2'))
@@ -53,7 +60,9 @@ def build_model(noise=False):
         #model.add(Dense(num_classes, name='linear_jindal', bias=False, weights=[np.identity(10, dtype='float32')]))
         model.add(Dropout(drop, name='hadamard_jindal'))
         model.add(Dense(num_classes, name='softmax_jindal', activation='softmax', bias=False, weights=[np.identity(10, dtype='float32')]))
+        #model.add(Activation('softmax'))
     return model
+
 
 def train_model(model, x_train, y_train, x_dev, y_dev):
     history = model.fit(x_train, y_train,
@@ -63,7 +72,8 @@ def train_model(model, x_train, y_train, x_dev, y_dev):
                         validation_data=(x_dev, y_dev))
     return history
 
-def plot_noise_dists(noise, model, drop, epochs):
+
+def plot_noise_dists(noise, model):
     phi = get_noise_dist(noise)
     weights_hidden = model.layers[-1].get_weights()[0]
 
@@ -84,6 +94,7 @@ def plot_noise_dists(noise, model, drop, epochs):
     plt.tight_layout()
     plt.savefig('noise_dist_n{}.pdf'.format(noise*100))
     plt.show()
+
 
 def prepare_data(flip=True):
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -123,9 +134,11 @@ model.compile(loss='categorical_crossentropy',
               optimizer=RMSprop(),
               metrics=['accuracy'])
 
+plot(model, to_file='model.png', show_shapes=True, show_layer_names=True)
+
 history = train_model(model, x_train, y_train, x_dev, y_dev)
 
-plot_noise_dists(noise, model, drop, epochs)
+plot_noise_dists(noise, model)
 
 # retrain model without noise extension
 for layer in [0, 2, 4]:

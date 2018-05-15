@@ -2,3 +2,5 @@ coloredlogs
 nltk
 avro-python3
 python-snappy
+pydot
+graphviz
