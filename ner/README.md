@@ -6,6 +6,9 @@ Verifying Jindal's results, params for this experiment:
 - epochs = 20
 - dropout = 0.1
 
+![img](model.png)
+
+## Model from Keras Tutorial
 
 | Model | Noise | achieved Acc. | claimed Acc. |
 | ------ | ------ | ------ | ------ |
@@ -17,5 +20,3 @@ Verifying Jindal's results, params for this experiment:
 | Dropout + Softmax | 30% | **97%** | 98% |
 | Dropout + Softmax | 50% | **96%** | 96% |
 | Dropout + Softmax | 70% | **93%** | 91% |
-
-
