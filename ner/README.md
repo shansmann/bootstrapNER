@@ -23,6 +23,7 @@ Verifying Jindal's results, params for this experiment:
 
 ### 30%
 ![30](noise_dist_n30.0.pdf)
+<embed src="noise_dist_n30.0.pdf" type='application/pdf'>
 
 ### 50%
 ![50](noise_dist_n50.0.pdf)
