@@ -112,7 +112,7 @@ def perpareDataset(embeddingsPath, datasetFiles, frequencyThresholdUnknownTokens
         for datasetFile in datasetFiles:
             dataColumnsIdx = {y:x for x,y in datasetFile[1].items()}
             tokenIdx = dataColumnsIdx['tokens']
-            datasetPath = 'data/%s/' % datasetName
+            datasetPath = '../data/%s/original/' % datasetName
             
             for dataset in ['train.txt', 'dev.txt', 'test.txt']:  
                 createDict(datasetPath+dataset, tokenIdx, neededVocab)
@@ -182,7 +182,7 @@ def perpareDataset(embeddingsPath, datasetFiles, frequencyThresholdUnknownTokens
         for datasetFile in datasetFiles:
             dataColumnsIdx = {y:x for x,y in datasetFile[1].items()}
             tokenIdx = dataColumnsIdx['tokens']
-            datasetPath = 'data/%s/' % datasetFile[0]            
+            datasetPath = '../data/%s/original/' % datasetFile[0]
             createFD(datasetPath+'train.txt', tokenIdx, fd, word2Idx)        
         
         addedWords = 0
@@ -205,9 +205,9 @@ def perpareDataset(embeddingsPath, datasetFiles, frequencyThresholdUnknownTokens
     
     casing2Idx = getCasingVocab()
     for datasetName, datasetColumns in datasetFiles:
-        trainData = 'data/%s/train.txt' % datasetName 
-        devData = 'data/%s/dev.txt' % datasetName 
-        testData = 'data/%s/test.txt' % datasetName 
+        trainData = '../data/%s/original/train.txt' % datasetName
+        devData = '../data/%s/original/dev.txt' % datasetName
+        testData = '../data/%s/original/test.txt' % datasetName
         paths = [trainData, devData, testData]
     
         pklObjects['datasets'][datasetName] = createPklFiles(paths, word2Idx, casing2Idx, datasetColumns, commentSymbol, padOneTokenSentence=True)

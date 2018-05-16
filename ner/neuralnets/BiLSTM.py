@@ -20,7 +20,7 @@ import math
 import numpy as np
 import logging
 
-from .keraslayers.ChainCRF import ChainCRF
+#from .keraslayers.ChainCRF import ChainCRF
 import util.BIOF1Validation as BIOF1Validation
 
 

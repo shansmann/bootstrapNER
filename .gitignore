@@ -8,7 +8,7 @@
 /data/*/*/*.txt
 data/__pycache__/
 __pychache__
-ner/jindal/*.npy
-ner/glove.840B.300d.txt
-models/*
-pkl/*
+/ner/jindal/*.npy
+/ner/glove.840B.300d.txt
+/ner/models/*
+/ner/pkl/*git
