@@ -49,7 +49,7 @@ class BiLSTM:
     maxCharLen = None
     
     params = {'miniBatchSize': 32, 'dropout': [0.25, 0.25], 'classifier': 'Softmax', 'LSTM-Size': [100], 'optimizer': 'nadam', 'earlyStopping': 5, 'addFeatureDimensions': 10, 
-                'charEmbeddings': None, 'charEmbeddingsSize':30, 'charFilterSize': 30, 'charFilterLength':3, 'charLSTMSize': 25, 'clipvalue': 0, 'clipnorm': 1 } #Default params
+                'charEmbeddings': None, 'charEmbeddingsSize':30, 'charFilterSize': 30, 'charFilterLength':3, 'charLSTMSize': 25, 'clipvalue': 0, 'clipnorm': 1 , 'noise': False} #Default params
    
 
     def __init__(self,   params=None):        
@@ -310,25 +310,35 @@ class BiLSTM:
                     model.add(TimeDistributed(Dropout(params['dropout']), name="dropout_"+str(cnt)))
             
             cnt += 1
-        
+
+        num_classes = len(self.dataset['mappings'][self.labelKey])
 
         # Softmax Decoder
-        if params['classifier'].lower() == 'softmax':    
-            model.add(TimeDistributed(Dense(len(self.dataset['mappings'][self.labelKey]), activation='softmax'), name='softmax_output'))
+        if params['classifier'].lower() == 'softmax':
+            model.add(TimeDistributed(Dense(num_classes, activation='softmax'), name='softmax_output'))
             lossFct = 'sparse_categorical_crossentropy'
         elif params['classifier'].lower() == 'crf':
-            model.add(TimeDistributed(Dense(len(self.dataset['mappings'][self.labelKey]), activation=None), name='hidden_layer'))
+            model.add(TimeDistributed(Dense(num_classes, activation=None), name='hidden_layer'))
             crf = ChainCRF()
             model.add(crf)            
             lossFct = crf.sparse_loss 
         elif params['classifier'].lower() == 'tanh-crf':
-            model.add(TimeDistributed(Dense(len(self.dataset['mappings'][self.labelKey]), activation='tanh'), name='hidden_layer'))
+            model.add(TimeDistributed(Dense(num_classes, activation='tanh'), name='hidden_layer'))
             crf = ChainCRF()
             model.add(crf)            
             lossFct = crf.sparse_loss 
         else:
             print("Please specify a valid classifier")
             assert(False) #Wrong classifier
+
+        # jindals noise model
+        if self.params['noise']:
+            model.add(TimeDistributed(Dropout(.1), name='hadamard_jindal'))
+            model.add(TimeDistributed(Dense(num_classes,
+											activation='softmax',
+											bias=False,
+											weights=[np.identity(10, dtype='float32')]),
+									  name='softmax_jindal'))
        
         optimizerParams = {}
         if 'clipnorm' in self.params and self.params['clipnorm'] != None and  self.params['clipnorm'] > 0:

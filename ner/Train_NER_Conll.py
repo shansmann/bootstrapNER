@@ -39,8 +39,13 @@ labelKey = 'NER_BIO'
 embeddingsPath = 'glove.840B.300d.txt' #glove word embeddings
 
 #Parameters of the network
-params = {'dropout': [0.25, 0.25], 'classifier': 'softmax', 'LSTM-Size': [100,75], 'optimizer': 'nadam', 'charEmbeddings': 'LSTM', 'miniBatchSize': 32}
-
+params = {'dropout': [0.25, 0.25],
+          'classifier': 'softmax',
+          'LSTM-Size': [100,75],
+          'optimizer': 'nadam',
+          'charEmbeddings': 'LSTM',
+          'miniBatchSize': 32,
+          'noise': True}
 
 
 frequencyThresholdUnknownTokens = 1000 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
@@ -72,16 +77,17 @@ data = datasets[datasetName]
 print("Dataset:", datasetName)
 print(data['mappings'].keys())
 print("Label key: ", labelKey)
-print("Train Sentences:", len(data['trainMatrix']))
-print("Dev Sentences:", len(data['devMatrix']))
-print("Test Sentences:", len(data['testMatrix']))
+#print("Train Sentences:", len(data['trainMatrix']))
+#print("Dev Sentences:", len(data['devMatrix']))
+#print("Test Sentences:", len(data['testMatrix']))
 
 
 model = neuralnets.BiLSTM.BiLSTM(params)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
-model.modelSavePath = "models/%s/%s/[DevScore]_[TestScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
-model.evaluate(2)
+model.buildModel()
+#model.modelSavePath = "models/%s/%s/[DevScore]_[TestScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
+model.evaluate(1)
 
 

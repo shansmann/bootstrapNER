@@ -39,7 +39,12 @@ labelKey = 'NER_BIO'
 embeddingsPath = 'glove.840B.300d.txt' #glove word embeddings
 
 #Parameters of the network
-params = {'dropout': [0.25, 0.25], 'classifier': 'softmax', 'LSTM-Size': [100,75], 'optimizer': 'nadam', 'charEmbeddings': 'LSTM', 'miniBatchSize': 32}
+params = {'dropout': [0.25, 0.25],
+          'classifier': 'softmax',
+          'LSTM-Size': [100,75],
+          'optimizer': 'nadam',
+          'charEmbeddings': 'LSTM',
+          'miniBatchSize': 32}
 
 
 
