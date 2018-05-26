@@ -20,5 +20,8 @@ scipy==1.0.1
 six==1.11.0
 tensorboard==1.7.0
 tensorflow==1.7.0
+tensorflow-gpu==1.7.0
 termcolor==1.1.0
 Werkzeug==0.14.1
+sklearn
+matplotlib

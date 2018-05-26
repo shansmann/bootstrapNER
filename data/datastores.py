@@ -7,15 +7,14 @@ from nltk.tokenize import word_tokenize
 from nltk.tokenize.punkt import PunktSentenceTokenizer
 import logging, coloredlogs
 import hashlib
-import itertools
 
-from .config import *
+import config
 
 coloredlogs.install()
 
 
 class Token:
-	def __init__(self, word, start, end, entity=OTHER_ENTITY, score=float(-1)):
+	def __init__(self, word, start, end, entity=config.OTHER_ENTITY, score=float(-1)):
 		self.word = word
 		self.start = int(start)
 		self.end = int(end)
@@ -162,7 +161,9 @@ class AvroCollection(Collection):
 			docs.append(doc)
 			if len(docs) % 5 == 0:
 				logging.info('finished {} documents.'.format(len(docs)))
-				break
+				logging.info('finished document {}'.format(idd))
+				#print(file_content)
+				#break
 		reader.close()
 		self.documents = docs
 
@@ -178,18 +179,23 @@ class AvroCollection(Collection):
 				# for now only sprout labeled tokens
 				concept_meta = token.get('attributes')
 				if concept_meta:
-					word = token.get('normalizedValue')
-					start = token.get('span').get('start')
-					end = token.get('span').get('end')
-					entity = concept_meta.get('sprout_ner_tag')
-					score = concept_meta.get('ms_concept_graph_rep_e_c')
-					tok = Token(word, start, end, entity, float(score))
-					annotations.append(tok)
+					word = token.get('normalizedValue', None)
+					start = token.get('span').get('start', None)
+					end = token.get('span').get('end', None)
+					entity = concept_meta.get('sprout_ner_tag', None)
+					score = concept_meta.get('ms_concept_graph_rep_e_c', None)
+					if word and start and end and entity and score:
+						tok = Token(word, start, end, entity.replace('boot_ner_', ''), float(score))
+						annotations.append(tok)
+					else:
+						logging.info('invalid annotation found in document {}'.format(idd))
 			annotated_doc = Document(idd, annotations)
 			annotated_docs.append(annotated_doc)
 			if len(annotated_docs) % 5 == 0:
 				logging.info('finished {} documents.'.format(len(annotated_docs)))
-				break
+				logging.info('finished document {}'.format(idd))
+				#[print(x.word, x.start, x.end, x.entity, float(x.score)) for x in annotations]
+				#break
 		reader.close()
 		self.annotations = annotated_docs
 

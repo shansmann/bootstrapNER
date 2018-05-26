@@ -5,6 +5,7 @@ import sys
 import neuralnets.BiLSTM
 import util.preprocessing
 
+
 # :: Change into the working dir of the script ::
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -21,15 +22,11 @@ formatter = logging.Formatter('%(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
-
-
-
 ######################################################
 #
 # Data preprocessing
 #
 ######################################################
-
 
 # :: Train / Dev / Test-Files ::
 datasetName = 'conll'
@@ -47,20 +44,15 @@ params = {'dropout': [0.25, 0.25],
           'miniBatchSize': 32,
           'noise': True}
 
-
 frequencyThresholdUnknownTokens = 1000 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
-
 
 datasetFiles = [
         (datasetName, dataColumns),
     ]
 
-
 # :: Prepares the dataset to be used with the LSTM-network. Creates and stores cPickle files in the pkl/ folder ::
 pickleFile = util.preprocessing.perpareDataset(embeddingsPath, datasetFiles, frequencyThresholdUnknownTokens, training_embeddings_only)
-
-
 
 ######################################################
 #
@@ -72,15 +64,9 @@ pickleFile = util.preprocessing.perpareDataset(embeddingsPath, datasetFiles, fre
 embeddings, word2Idx, datasets = util.preprocessing.loadDatasetPickle(pickleFile)
 data = datasets[datasetName]
 
-
-
 print("Dataset:", datasetName)
 print(data['mappings'].keys())
 print("Label key: ", labelKey)
-#print("Train Sentences:", len(data['trainMatrix']))
-#print("Dev Sentences:", len(data['devMatrix']))
-#print("Test Sentences:", len(data['testMatrix']))
-
 
 model = neuralnets.BiLSTM.BiLSTM(params)
 model.setMappings(embeddings, data['mappings'])
@@ -89,5 +75,3 @@ model.verboseBuild = True
 model.buildModel()
 #model.modelSavePath = "models/%s/%s/[DevScore]_[TestScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
 model.evaluate(1)
-
-

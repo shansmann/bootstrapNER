@@ -10,8 +10,7 @@ from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
 from keras.optimizers import RMSprop
-from keras.utils import np_utils
-from keras.utils.visualize_util import plot
+from keras.utils import np_utils, plot_model
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -21,7 +20,7 @@ import numpy as np
 batch_size = 128
 num_classes = 10
 epochs = 20
-noise = .7
+noise = .95
 drop = .1
 seed(7)
 set_random_seed(7)
@@ -124,6 +123,12 @@ def prepare_data(flip=True):
 
     return x_train, y_train, x_dev, y_dev, x_test, y_test
 
+def remove_jindal(model):
+    model.layers.pop()
+    model.layers.pop()
+    return model
+
+######################## TRAINING ########################
 
 x_train, y_train, x_dev, y_dev, x_test, y_test = prepare_data(flip=True)
 
@@ -134,11 +139,25 @@ model.compile(loss='categorical_crossentropy',
               optimizer=RMSprop(),
               metrics=['accuracy'])
 
-plot(model, to_file='model.png', show_shapes=True, show_layer_names=True)
+plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
 
 history = train_model(model, x_train, y_train, x_dev, y_dev)
 
 plot_noise_dists(noise, model)
+
+model_wo_jindal = remove_jindal(model)
+model_wo_jindal.summary()
+score = model_wo_jindal.evaluate(x_test, y_test, verbose=0)
+
+#score = model.evaluate(x_test, y_test, verbose=0)
+
+print('Test loss:', score[0])
+print('Test accuracy:', score[1])
+
+
+"""
+
+#
 
 # retrain model without noise extension
 for layer in [0, 2, 4]:
@@ -175,3 +194,4 @@ score = model_wo_noise.evaluate(x_test, y_test, verbose=0)
 
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])
+"""
