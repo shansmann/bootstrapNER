@@ -37,6 +37,7 @@ class BiLSTM:
 	verboseBuild = True
 
 	model = None
+	noise_free_model = None
 	epoch = 0
 	skipOneTokenSentences=True
 
@@ -111,6 +112,11 @@ class BiLSTM:
 		if self.model == None:
 			self.buildModel()
 
+		#noise_free_model = None
+		if self.params['noise'] and mode == 'test':
+			logging.warning('using model without noise mitigation for test data.')
+			self.noise_free_model = self.get_jindal_free_model()
+
 		predLabels = [None]*len(sentences)
 
 		sentenceLengths = self.getSentenceLengths(sentences)
@@ -136,26 +142,19 @@ class BiLSTM:
 					inputData[name] = np.asarray(inputData[name])
 
 				#TODO: add noise-free model initialization
-				"""
-				if self.params['noise'] and mode == 'test':
-					logging.info('Test-Data: Unplugging jindal mod for test evaluation.')
-					model_copy = clone_model(self.model)
-					model_copy.set_weights(self.model.get_weights())
-					model_copy.layers.pop()
-					model_copy.layers.pop()
-					predictions = model_copy.predict([inputData[name] for name in features], verbose=False)
-					model_copy = None
+				if self.noise_free_model:
+					predictions = self.noise_free_model.predict([inputData[name] for name in features], verbose=False)
 				else:
 					predictions = self.model.predict([inputData[name] for name in features], verbose=False)
-				"""
-				predictions = self.model.predict([inputData[name] for name in features], verbose=False)
-				predictions = predictions.argmax(axis=-1) #Predict classes
 
+				predictions = predictions.argmax(axis=-1) #Predict classes
 
 			predIdx = 0
 			for idx in indices:
 				predLabels[idx] = predictions[predIdx]
 				predIdx += 1
+
+		self.noise_free_model = None
 
 		return predLabels
 
@@ -236,7 +235,6 @@ class BiLSTM:
 				for name in features:
 					inputData[name] = np.asarray(inputData[name])
 
-				#tmp = [labels] + [inputData[name] for name in features]
 				yield [labels] + [inputData[name] for name in features]
 
 			assert(numTrainExamples == sentenceCount) #Check that no sentence was missed
@@ -272,6 +270,8 @@ class BiLSTM:
 									 weights=[caseMatrix],
 									 trainable=False,
 									 name='casing_emd')(casing_input)
+
+		concat_layers = [token_embedding, casing_embedding]
 		# :: Character Embeddings ::
 		if params['charEmbeddings'] not in [None, "None", "none", False, "False", "false"]:
 			charset = self.dataset['mappings']['characters']
@@ -305,8 +305,9 @@ class BiLSTM:
 				self.additionalFeatures = []
 
 			self.additionalFeatures.append('characters')
+			concat_layers.append(character_lstm)
 
-		merged = keras.layers.concatenate([token_embedding, casing_embedding, character_lstm],
+		merged = keras.layers.concatenate(concat_layers,
 										  name='concat_layer')
 
 		bi_lstm_1 = Bidirectional(LSTM(params['LSTM-Size'][0],
@@ -326,20 +327,7 @@ class BiLSTM:
 		output = TimeDistributed(Dense(num_classes,
 									   activation='softmax'),
 								 name='softmax_output')(bi_lstm_2)
-		"""
-		# Softmax Decoder
-		if params['classifier'].lower() == 'softmax':
-			model.add(TimeDistributed(Dense(num_classes, activation='softmax'), name='softmax_output'))
-			lossFct = 'sparse_categorical_crossentropy'
-		elif params['classifier'].lower() == 'crf':
-			model.add(TimeDistributed(Dense(num_classes, activation=None), name='hidden_layer'))
-			crf = ChainCRF()
-			model.add(crf)
-			lossFct = crf.sparse_loss
-		else:
-			print("Please specify a valid classifier")
-			assert(False) #Wrong classifier
-		"""
+
 		# jindals noise model
 		if self.params['noise']:
 			hadamard_jindal = TimeDistributed(Dropout(.1),
@@ -376,6 +364,11 @@ class BiLSTM:
 		model.compile(loss='sparse_categorical_crossentropy', optimizer=opt)
 
 		self.model = model
+
+		#new_model = Model(inputs=model.inputs, outputs=model.layers[-3].output)
+		#new_model.summary()
+		#plot_model(new_model, to_file='new_model.png', show_shapes=True, show_layer_names=True)
+
 		if self.verboseBuild:
 			model.summary()
 			logging.debug(model.get_config())
@@ -392,6 +385,9 @@ class BiLSTM:
 		else:
 			self.resultsOut = None
 
+	def get_jindal_free_model(self):
+		new_model = Model(inputs=self.model.inputs, outputs=self.model.layers[-3].output)
+		return new_model
 
 	def evaluate(self, epochs):
 		logging.info("%d train sentences" % len(self.dataset['trainMatrix']))
@@ -482,7 +478,7 @@ class BiLSTM:
 
 	def computeScores(self, devMatrix, testMatrix):
 		if self.labelKey.endswith('_BIO') or self.labelKey.endswith('_IOB') or self.labelKey.endswith('_IOBES'):
-			logging.info('computing F1 Scores.')
+			logging.info("computing F1 Scores.")
 			return self.computeF1Scores(devMatrix, testMatrix)
 		else:
 			return self.computeAccScores(devMatrix, testMatrix)

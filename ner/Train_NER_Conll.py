@@ -41,8 +41,8 @@ params = {'dropout': [0.25, 0.25],
           'LSTM-Size': [100,75],
           'optimizer': 'nadam',
           'charEmbeddings': 'LSTM',
-          'miniBatchSize': 1,
-          'noise': True}
+          'miniBatchSize': 32,
+          'noise': False}
 
 frequencyThresholdUnknownTokens = 1000 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
