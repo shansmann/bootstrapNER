@@ -8,7 +8,7 @@ License: Apache-2.0
 from __future__ import print_function
 
 import keras
-from keras.models import Sequential, clone_model
+from keras.models import Sequential, Model
 from keras.layers import *
 from keras.optimizers import *
 from keras.utils import *
@@ -37,6 +37,7 @@ class BiLSTM:
 	verboseBuild = True
 
 	model = None
+	noise_free_model = None
 	epoch = 0
 	skipOneTokenSentences=True
 
@@ -111,6 +112,11 @@ class BiLSTM:
 		if self.model == None:
 			self.buildModel()
 
+		#noise_free_model = None
+		if self.params['noise'] and mode == 'test':
+			logging.warning('using model without noise mitigation for test data.')
+			self.noise_free_model = self.get_jindal_free_model()
+
 		predLabels = [None]*len(sentences)
 
 		sentenceLengths = self.getSentenceLengths(sentences)
@@ -136,26 +142,19 @@ class BiLSTM:
 					inputData[name] = np.asarray(inputData[name])
 
 				#TODO: add noise-free model initialization
-				"""
-				if self.params['noise'] and mode == 'test':
-					logging.info('Test-Data: Unplugging jindal mod for test evaluation.')
-					model_copy = clone_model(self.model)
-					model_copy.set_weights(self.model.get_weights())
-					model_copy.layers.pop()
-					model_copy.layers.pop()
-					predictions = model_copy.predict([inputData[name] for name in features], verbose=False)
-					model_copy = None
+				if self.noise_free_model:
+					predictions = self.noise_free_model.predict([inputData[name] for name in features], verbose=False)
 				else:
 					predictions = self.model.predict([inputData[name] for name in features], verbose=False)
-				"""
-				predictions = self.model.predict([inputData[name] for name in features], verbose=False)
-				predictions = predictions.argmax(axis=-1) #Predict classes
 
+				predictions = predictions.argmax(axis=-1) #Predict classes
 
 			predIdx = 0
 			for idx in indices:
 				predLabels[idx] = predictions[predIdx]
 				predIdx += 1
+
+		self.noise_free_model = None
 
 		return predLabels
 
@@ -176,7 +175,6 @@ class BiLSTM:
 				inputData = {}
 				for name in features:
 					inputData[name] = np.asarray([dataset[idx][name]])
-
 
 				yield [labels] + [inputData[name] for name in features]
 
@@ -255,24 +253,25 @@ class BiLSTM:
 
 		caseMatrix = np.identity(len(casing2Idx), dtype='float32')
 
-		tokens = Sequential()
-		tokens.add(Embedding(input_dim=embeddings.shape[0], output_dim=embeddings.shape[1],  weights=[embeddings], trainable=False, name='token_emd'))
+		token_input = Input(shape=(None,),
+							name='token_input')
 
-		casing = Sequential()
-		#casing.add(Embedding(input_dim=len(casing2Idx), output_dim=self.addFeatureDimensions, trainable=True))
-		casing.add(Embedding(input_dim=caseMatrix.shape[0], output_dim=caseMatrix.shape[1], weights=[caseMatrix], trainable=False, name='casing_emd'))
+		token_embedding = Embedding(input_dim=embeddings.shape[0],
+									output_dim=embeddings.shape[1],
+									weights=[embeddings],
+									trainable=False,
+									name='token_embedding')(token_input)
 
+		casing_input = Input(shape=(None,),
+							 name='casing_input')
 
-		mergeLayers = [tokens, casing]
+		casing_embedding = Embedding(input_dim=caseMatrix.shape[0],
+									 output_dim=caseMatrix.shape[1],
+									 weights=[caseMatrix],
+									 trainable=False,
+									 name='casing_emd')(casing_input)
 
-		if self.additionalFeatures != None:
-			for addFeature in self.additionalFeatures:
-				maxAddFeatureValue = max([max(sentence[addFeature]) for sentence in self.dataset['trainMatrix']+self.dataset['devMatrix']+self.dataset['testMatrix']])
-				addFeatureEmd = Sequential()
-				addFeatureEmd.add(Embedding(input_dim=maxAddFeatureValue+1, output_dim=self.params['addFeatureDimensions'], trainable=True, name=addFeature+'_emd'))
-				mergeLayers.append(addFeatureEmd)
-
-
+		concat_layers = [token_embedding, casing_embedding]
 		# :: Character Embeddings ::
 		if params['charEmbeddings'] not in [None, "None", "none", False, "False", "false"]:
 			charset = self.dataset['mappings']['characters']
@@ -287,71 +286,60 @@ class BiLSTM:
 			charEmbeddings[0] = np.zeros(charEmbeddingsSize) #Zero padding
 			charEmbeddings = np.asarray(charEmbeddings)
 
-			chars = Sequential()
-			chars.add(TimeDistributed(Embedding(input_dim=charEmbeddings.shape[0], output_dim=charEmbeddings.shape[1],  weights=[charEmbeddings], trainable=True, mask_zero=True), input_shape=(None,maxCharLen), name='char_emd'))
+			character_input = Input(shape=(None, maxCharLen),
+									name='character_input')
+			character_embedding = TimeDistributed(Embedding(input_dim=charEmbeddings.shape[0],
+															output_dim=charEmbeddings.shape[1],
+															weights=[charEmbeddings],
+															trainable=True,
+															mask_zero=True),
+												  input_shape=(None, maxCharLen),
+												  name='char_emd')(character_input)
 
-			if params['charEmbeddings'].lower() == 'lstm': #Use LSTM for char embeddings from Lample et al., 2016
-				charLSTMSize = params['charLSTMSize']
-				chars.add(TimeDistributed(Bidirectional(LSTM(charLSTMSize, return_sequences=False)), name="char_lstm"))
-			else: #Use CNNs for character embeddings from Ma and Hovy, 2016
-				charFilterSize = params['charFilterSize']
-				charFilterLength = params['charFilterLength']
-				chars.add(TimeDistributed(Convolution1D(charFilterSize, charFilterLength, border_mode='same'), name="char_cnn"))
-				chars.add(TimeDistributed(GlobalMaxPooling1D(), name="char_pooling"))
+			charLSTMSize = params['charLSTMSize']
+			character_lstm = TimeDistributed(Bidirectional(LSTM(charLSTMSize,
+																return_sequences=False)),
+											 name="char_lstm")(character_embedding)
 
-			mergeLayers.append(chars)
 			if self.additionalFeatures == None:
 				self.additionalFeatures = []
 
 			self.additionalFeatures.append('characters')
+			concat_layers.append(character_lstm)
 
-		model = Sequential();
-		model.add(Merge(mergeLayers, mode='concat'))
+		merged = keras.layers.concatenate(concat_layers,
+										  name='concat_layer')
 
+		bi_lstm_1 = Bidirectional(LSTM(params['LSTM-Size'][0],
+									   return_sequences=True,
+									   dropout_W=params['dropout'][0],
+									   dropout_U=params['dropout'][1]),
+								  name="BiLSTM_1")(merged)
 
-		# Add LSTMs
-		cnt = 1
-		for size in params['LSTM-Size']:
-			if isinstance(params['dropout'], (list, tuple)):
-				model.add(Bidirectional(LSTM(size, return_sequences=True, dropout_W=params['dropout'][0], dropout_U=params['dropout'][1]), name="varLSTM_"+str(cnt)))
-
-			else:
-				""" Naive dropout """
-				model.add(Bidirectional(LSTM(size, return_sequences=True), name="LSTM_"+str(cnt)))
-
-				if params['dropout'] > 0.0:
-					model.add(TimeDistributed(Dropout(params['dropout']), name="dropout_"+str(cnt)))
-
-			cnt += 1
+		bi_lstm_2 = Bidirectional(LSTM(params['LSTM-Size'][1],
+									   return_sequences=True,
+									   dropout_W=params['dropout'][0],
+									   dropout_U=params['dropout'][1]),
+								  name="BiLSTM_2")(bi_lstm_1)
 
 		num_classes = len(self.dataset['mappings'][self.labelKey])
 
-		# Softmax Decoder
-		if params['classifier'].lower() == 'softmax':
-			model.add(TimeDistributed(Dense(num_classes, activation='softmax'), name='softmax_output'))
-			lossFct = 'sparse_categorical_crossentropy'
-		elif params['classifier'].lower() == 'crf':
-			model.add(TimeDistributed(Dense(num_classes, activation=None), name='hidden_layer'))
-			crf = ChainCRF()
-			model.add(crf)
-			lossFct = crf.sparse_loss
-		elif params['classifier'].lower() == 'tanh-crf':
-			model.add(TimeDistributed(Dense(num_classes, activation='tanh'), name='hidden_layer'))
-			crf = ChainCRF()
-			model.add(crf)
-			lossFct = crf.sparse_loss
-		else:
-			print("Please specify a valid classifier")
-			assert(False) #Wrong classifier
+		output = TimeDistributed(Dense(num_classes,
+									   activation='softmax'),
+								 name='softmax_output')(bi_lstm_2)
 
 		# jindals noise model
 		if self.params['noise']:
-			model.add(TimeDistributed(Dropout(.1), name='hadamard_jindal'))
-			model.add(TimeDistributed(Dense(num_classes,
+			hadamard_jindal = TimeDistributed(Dropout(.1),
+											  name='hadamard_jindal')(output)
+			output = TimeDistributed(Dense(num_classes,
 											activation='softmax',
 											bias=False,
 											weights=[np.identity(10, dtype='float32')]),
-									  name='softmax_jindal'))
+									  name='softmax_jindal')(hadamard_jindal)
+
+		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
+		#model = Model(inputs=[token_embedding, casing_embedding], outputs=output)
 
 		optimizerParams = {}
 		if 'clipnorm' in self.params and self.params['clipnorm'] != None and  self.params['clipnorm'] > 0:
@@ -373,9 +361,14 @@ class BiLSTM:
 		elif params['optimizer'].lower() == 'sgd':
 			opt = SGD(lr=0.1, **optimizerParams)
 
-		model.compile(loss=lossFct, optimizer=opt)
+		model.compile(loss='sparse_categorical_crossentropy', optimizer=opt)
 
 		self.model = model
+
+		#new_model = Model(inputs=model.inputs, outputs=model.layers[-3].output)
+		#new_model.summary()
+		#plot_model(new_model, to_file='new_model.png', show_shapes=True, show_layer_names=True)
+
 		if self.verboseBuild:
 			model.summary()
 			logging.debug(model.get_config())
@@ -392,6 +385,9 @@ class BiLSTM:
 		else:
 			self.resultsOut = None
 
+	def get_jindal_free_model(self):
+		new_model = Model(inputs=self.model.inputs, outputs=self.model.layers[-3].output)
+		return new_model
 
 	def evaluate(self, epochs):
 		logging.info("%d train sentences" % len(self.dataset['trainMatrix']))
@@ -482,7 +478,7 @@ class BiLSTM:
 
 	def computeScores(self, devMatrix, testMatrix):
 		if self.labelKey.endswith('_BIO') or self.labelKey.endswith('_IOB') or self.labelKey.endswith('_IOBES'):
-			logging.info('computing F1 Scores.')
+			logging.info("computing F1 Scores.")
 			return self.computeF1Scores(devMatrix, testMatrix)
 		else:
 			return self.computeAccScores(devMatrix, testMatrix)
@@ -602,7 +598,7 @@ class BiLSTM:
 
 		return numCorrLabels/float(numLabels)
 
-	def loadModel(self, modelPath):
+	def loadModel(self, modelPath="models/conll/NER_BIO/0.8865_0.8588_1.h5"):
 		import h5py
 		import json
 		from neuralnets.keraslayers.ChainCRF import create_custom_objects
