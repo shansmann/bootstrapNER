@@ -8,7 +8,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from keras import backend as K
-from keras import initializations, regularizers, constraints
+from keras import initializers, regularizers, constraints
 from keras.engine import Layer, InputSpec
 
 if K._BACKEND == 'tensorflow':
@@ -295,7 +295,7 @@ class ChainCRF(Layer):
         self.supports_masking = True
         self.uses_learning_phase = True
         self.input_spec = [InputSpec(ndim=3)]
-        self.init = initializations.get(init)
+        self.init = initializers.get(init)
 
         self.U_regularizer = regularizers.get(U_regularizer)
         self.b_start_regularizer = regularizers.get(b_start_regularizer)
