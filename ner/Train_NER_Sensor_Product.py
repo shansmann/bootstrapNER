@@ -29,7 +29,7 @@ logger.addHandler(ch)
 ######################################################
 
 # :: Train / Dev / Test-Files ::
-datasetName = 'product_corpus_man'
+datasetName = 'sensor_train_product_man_test'
 dataColumns = {3:'tokens', 0:'NER_BIO'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
 labelKey = 'NER_BIO'
 
@@ -42,7 +42,7 @@ params = {'dropout': [0.25, 0.25],
           'optimizer': 'nadam',
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 32,
-          'noise': False}
+          'noise': True}
 
 frequencyThresholdUnknownTokens = 5 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
