@@ -7,6 +7,7 @@ from nltk.tokenize import word_tokenize
 from nltk.tokenize.punkt import PunktSentenceTokenizer
 import logging, coloredlogs
 import hashlib
+import re
 
 import config
 
@@ -146,6 +147,7 @@ class AvroCollection(Collection):
 	def parse_text_data(self, path):
 		docs = []
 		reader = DataFileReader(open(path, 'rb'), DatumReader())
+		#offset = 0
 		for document in reader:
 			file_content = document['text']
 			m = hashlib.md5()
@@ -158,6 +160,12 @@ class AvroCollection(Collection):
 				end = token['span']['end']
 				#TODO: handle LEMMA
 				word = file_content[start:end]
+				if re.search(r"\s", word) or len(word) == 0:
+					#TODO: maybe use offset
+					#offset += len(word)
+					if self.verbose:
+						logging.warning('token: {} contains spaces or is empty, skipping. document id: {}'.format(word, idd))
+					continue
 				words.append(Token(word, start, end))
 			for sentence in document['sentences']:
 				end = sentence['span']['end']
@@ -191,14 +199,14 @@ class AvroCollection(Collection):
 							tok = Token(word, start, end, entity.replace('boot_ner_', ''), float(score))
 							annotations.append(tok)
 						elif self.verbose:
-							logging.info('invalid annotation found in document {}'.format(idd))
+							logging.warning('invalid annotation found in document {}'.format(idd))
 				else:
 					entity = token.get('type')
 					if word and start and end and entity:
 						tok = Token(word, start, end, entity, float(1))
 						annotations.append(tok)
 					elif self.verbose:
-						logging.info('invalid annotation found in document {}'.format(idd))
+						logging.warning('invalid annotation found in document {}'.format(idd))
 
 			annotated_doc = Document(idd, annotations)
 			annotated_docs.append(annotated_doc)
@@ -280,8 +288,12 @@ class Processor:
 							continue
 					if (token.start - 1) in (document.sentence_breaks):
 						record_file.write('\n')
-					line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
-					record_file.write(line)
+					# fallback token 0
+					if token.word == ' ' or token.word == '':
+						token.word = 0
+					else:
+						line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
+						record_file.write(line)
 				record_file.write('\n')
 				if n_docs % 10 == 0:
 					logging.info('finished {} documents.'.format(n_docs))

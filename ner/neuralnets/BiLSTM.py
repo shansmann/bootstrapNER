@@ -20,6 +20,7 @@ import time
 import math
 import numpy as np
 import logging
+import matplotlib.pyplot as plt
 
 #from .keraslayers.ChainCRF import ChainCRF
 import util.BIOF1Validation as BIOF1Validation
@@ -40,6 +41,7 @@ class BiLSTM:
 	noise_free_model = None
 	epoch = 0
 	skipOneTokenSentences=True
+	num_classes = 0
 
 	dataset = None
 	embeddings = None
@@ -322,9 +324,9 @@ class BiLSTM:
 									   dropout_U=params['dropout'][1]),
 								  name="BiLSTM_2")(bi_lstm_1)
 
-		num_classes = len(self.dataset['mappings'][self.labelKey])
+		self.num_classes = len(self.dataset['mappings'][self.labelKey])
 
-		output = TimeDistributed(Dense(num_classes,
+		output = TimeDistributed(Dense(self.num_classes,
 									   activation='softmax'),
 								 name='softmax_output')(bi_lstm_2)
 
@@ -332,7 +334,7 @@ class BiLSTM:
 		if self.params['noise']:
 			hadamard_jindal = TimeDistributed(Dropout(.1),
 											  name='hadamard_jindal')(output)
-			output = TimeDistributed(Dense(num_classes,
+			output = TimeDistributed(Dense(self.num_classes,
 											activation='softmax',
 											bias=False,
 											weights=[np.identity(10, dtype='float32')]),
@@ -373,7 +375,7 @@ class BiLSTM:
 			model.summary()
 			logging.debug(model.get_config())
 			logging.debug("Optimizer: %s, %s" % (str(type(opt)), str(opt.get_config())))
-			plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
+			#plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
 
 	def storeResults(self, resultsFilepath):
 		if resultsFilepath != None:
@@ -469,12 +471,21 @@ class BiLSTM:
 		# evaluate model on test data
 		#dev_score, test_score = self.computeScores(devMatrix, testMatrix)
 		#logging.info("%.4f on test" % (test_score))
+		if self.verboseBuild and self.params["noise"]:
+			self.plot_noise_dists(max_test_score)
 
-	"""
-	def remove_jindal(self):
-		self.model = self.model.layers.pop()
-		self.model = self.model.layers.pop()
-	"""
+	def plot_noise_dists(self, test_score):
+
+		weights = self.model.layers[-1].get_weights()[0]
+		plt.imshow(weights, cmap='hot', interpolation='nearest')
+		plt.xticks(np.arange(0, self.num_classes))
+		plt.yticks(np.arange(0, self.num_classes))
+		plt.colorbar()
+		plt.title('learned noise - jindal - f1: {}'.format(test_score))
+
+		plt.tight_layout()
+		plt.savefig('noise_dist_learned_f1_{}.pdf'.format(test_score))
+		plt.show()
 
 	def computeScores(self, devMatrix, testMatrix):
 		if self.labelKey.endswith('_BIO') or self.labelKey.endswith('_IOB') or self.labelKey.endswith('_IOBES'):

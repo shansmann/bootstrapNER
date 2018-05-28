@@ -29,7 +29,7 @@ logger.addHandler(ch)
 ######################################################
 
 # :: Train / Dev / Test-Files ::
-datasetName = 'sensor_train_product_man_test'
+datasetName = 'sensor_corpus_auto'
 dataColumns = {3:'tokens', 0:'NER_BIO'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
 labelKey = 'NER_BIO'
 
