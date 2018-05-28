@@ -138,6 +138,11 @@ class TextCollection(Collection):
 
 
 class AvroCollection(Collection):
+	def __init__(self, name, mode, verbose=False):
+		self.mode = mode
+		self.verbose = verbose
+		super(Collection, self).__init__()
+
 	def parse_text_data(self, path):
 		docs = []
 		reader = DataFileReader(open(path, 'rb'), DatumReader())
@@ -159,11 +164,9 @@ class AvroCollection(Collection):
 				sentence_breaks.append(end)
 			doc = Document(idd, words, sentence_breaks, file_content)
 			docs.append(doc)
-			if len(docs) % 5 == 0:
+			if len(docs) % 10 == 0:
 				logging.info('finished {} documents.'.format(len(docs)))
-				logging.info('finished document {}'.format(idd))
 				#print(file_content)
-				#break
 		reader.close()
 		self.documents = docs
 
@@ -176,37 +179,44 @@ class AvroCollection(Collection):
 			idd = str(int(m.hexdigest(), 16))[0:12]
 			annotations = []
 			for token in document['conceptMentions']:
-				# for now only sprout labeled tokens
-				concept_meta = token.get('attributes')
-				if concept_meta:
-					word = token.get('normalizedValue', None)
-					start = token.get('span').get('start', None)
-					end = token.get('span').get('end', None)
-					entity = concept_meta.get('sprout_ner_tag', None)
-					score = concept_meta.get('ms_concept_graph_rep_e_c', None)
-					if word and start and end and entity and score:
-						tok = Token(word, start, end, entity.replace('boot_ner_', ''), float(score))
+				word = token.get('normalizedValue', None)
+				start = token.get('span').get('start', None)
+				end = token.get('span').get('end', None)
+				if self.mode == 'auto':
+					concept_meta = token.get('attributes')
+					if concept_meta:
+						entity = concept_meta.get('sprout_ner_tag', None)
+						score = concept_meta.get('ms_concept_graph_rep_e_c', None)
+						if word and start and end and entity and score:
+							tok = Token(word, start, end, entity.replace('boot_ner_', ''), float(score))
+							annotations.append(tok)
+						elif self.verbose:
+							logging.info('invalid annotation found in document {}'.format(idd))
+				else:
+					entity = token.get('type')
+					if word and start and end and entity:
+						tok = Token(word, start, end, entity, float(1))
 						annotations.append(tok)
-					else:
+					elif self.verbose:
 						logging.info('invalid annotation found in document {}'.format(idd))
+
 			annotated_doc = Document(idd, annotations)
 			annotated_docs.append(annotated_doc)
-			if len(annotated_docs) % 5 == 0:
+			if len(annotated_docs) % 10 == 0:
 				logging.info('finished {} documents.'.format(len(annotated_docs)))
-				logging.info('finished document {}'.format(idd))
 				#[print(x.word, x.start, x.end, x.entity, float(x.score)) for x in annotations]
-				#break
 		reader.close()
 		self.annotations = annotated_docs
 
 
 class Processor:
-	def __init__(self, Collection, entities=[]):
+	def __init__(self, Collection, entities=[], verbose=False):
 		self.text_collection = Collection.documents
 		self.annotation_collection = Collection.annotations
 		self.entities = entities
 		self.entity_overlaps = 0
 		self.index_errors = 0
+		self.verbose = verbose
 
 	def _match_tokens(self, token, anno):
 		prefix = ''
@@ -229,17 +239,19 @@ class Processor:
 						return prefix
 					else:
 						# token overlap
-						logging.warning('token overlap. Word: {}, Previous: {}-{}, Suggestion: {}-{}'.format(token.word,
-																									   token.entity,
-																									   token.score,
-																									   anno.entity,
-																									   anno.score))
+						if self.verbose:
+							logging.warning('token overlap. Word: {}, Previous: {}:{}, Suggestion: {}:{}'.format(token.word,
+																										   token.entity,
+																										   token.score,
+																										   anno.entity,
+																										   anno.score))
 						self.entity_overlaps += 1
 						return prefix
 				else:
 					# token not in annotation, index fail
-					logging.warning('token not in annotation! Word:{} Annotation:{}'.format(token.word,
-																							anno.word))
+					if self.verbose:
+						logging.warning('token not in annotation! Word:{} Annotation:{}'.format(token.word,
+																								anno.word))
 					self.index_errors += 1
 					return prefix
 			else:
@@ -249,7 +261,9 @@ class Processor:
 
 	def create_conll_format(self, outpath):
 		with open(outpath, 'w') as record_file:
+			n_docs = 0
 			for document in self.text_collection:
+				n_docs += 1
 				idd = document.id
 				for token in document.tokens:
 					# check annotated docs
@@ -269,3 +283,5 @@ class Processor:
 					line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
 					record_file.write(line)
 				record_file.write('\n')
+				if n_docs % 10 == 0:
+					logging.info('finished {} documents.'.format(n_docs))

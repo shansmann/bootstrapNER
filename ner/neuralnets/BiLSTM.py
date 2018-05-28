@@ -54,7 +54,7 @@ class BiLSTM:
 				'charEmbeddings': None, 'charEmbeddingsSize':30, 'charFilterSize': 30, 'charFilterLength':3, 'charLSTMSize': 25, 'clipvalue': 0, 'clipnorm': 1 , 'noise': False} #Default params
 
 
-	def __init__(self,   params=None):
+	def __init__(self, params=None):
 		if params != None:
 			self.params.update(params)
 
