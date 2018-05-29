@@ -25,6 +25,8 @@ import matplotlib.pyplot as plt
 #from .keraslayers.ChainCRF import ChainCRF
 import util.BIOF1Validation as BIOF1Validation
 
+# deactivate interactive mode
+plt.ioff()
 
 import sys
 if (sys.version_info > (3, 0)):
@@ -475,7 +477,7 @@ class BiLSTM:
 			self.plot_noise_dists(max_test_score)
 
 	def plot_noise_dists(self, test_score):
-
+		fig = plt.figure()
 		weights = self.model.layers[-1].get_weights()[0]
 		plt.imshow(weights, cmap='hot', interpolation='nearest')
 		plt.xticks(np.arange(0, self.num_classes))
@@ -485,7 +487,7 @@ class BiLSTM:
 
 		plt.tight_layout()
 		plt.savefig('noise_dist_learned_f1_{}.pdf'.format(test_score))
-		plt.show()
+		plt.close(fig)
 
 	def computeScores(self, devMatrix, testMatrix):
 		if self.labelKey.endswith('_BIO') or self.labelKey.endswith('_IOB') or self.labelKey.endswith('_IOBES'):
@@ -609,7 +611,7 @@ class BiLSTM:
 
 		return numCorrLabels/float(numLabels)
 
-	def loadModel(self, modelPath="models/conll/NER_BIO/0.8865_0.8588_1.h5"):
+	def loadModel(self, modelPath="/mnt/hdd/experiments/shansmann/bootstrapNER/ner/models/sensor_corpus_auto/NER_BIO/0.0634_0.0345_7.h5"):
 		import h5py
 		import json
 		from neuralnets.keraslayers.ChainCRF import create_custom_objects
@@ -626,4 +628,5 @@ class BiLSTM:
 
 		self.model = model
 		self.setMappings(None, mappings)
+		self.plot_noise_dists('0.0345')
 
