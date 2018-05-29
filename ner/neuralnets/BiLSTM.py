@@ -477,6 +477,7 @@ class BiLSTM:
 
 	def plot_noise_dists(self, test_score):
 		labels = list(self.mappings['NER_BIO'].keys())
+		logging.info(labels)
 		weights = self.model.layers[-1].get_weights()[0]
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
 		pylab.xticks(np.arange(self.num_classes), labels)
