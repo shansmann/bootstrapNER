@@ -476,10 +476,12 @@ class BiLSTM:
 			self.plot_noise_dists(max_test_score)
 
 	def plot_noise_dists(self, test_score):
+		labels = list(self.mappings['NER_BIO'].keys())
+		print(labels)
 		weights = self.model.layers[-1].get_weights()[0]
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
-		pylab.xticks(np.arange(0, self.num_classes), labels=list(self.mappings['NER_BIO'].keys()))
-		pylab.yticks(np.arange(0, self.num_classes), labels=list(self.mappings['NER_BIO'].keys()))
+		pylab.xticks(np.arange(0, self.num_classes), labels=labels)
+		pylab.yticks(np.arange(0, self.num_classes), labels=labels)
 		pylab.colorbar()
 		pylab.title('learned noise - jindal - f1: {}'.format(test_score))
 
