@@ -20,7 +20,6 @@ import time
 import math
 import numpy as np
 import logging
-import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
 import pylab
