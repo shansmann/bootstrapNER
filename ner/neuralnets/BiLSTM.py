@@ -21,12 +21,12 @@ import math
 import numpy as np
 import logging
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
+import pylab
 
 #from .keraslayers.ChainCRF import ChainCRF
 import util.BIOF1Validation as BIOF1Validation
-
-# deactivate interactive mode
-plt.ioff()
 
 import sys
 if (sys.version_info > (3, 0)):
@@ -477,17 +477,16 @@ class BiLSTM:
 			self.plot_noise_dists(max_test_score)
 
 	def plot_noise_dists(self, test_score):
-		fig = plt.figure()
 		weights = self.model.layers[-1].get_weights()[0]
-		plt.imshow(weights, cmap='hot', interpolation='nearest')
-		plt.xticks(np.arange(0, self.num_classes))
-		plt.yticks(np.arange(0, self.num_classes))
-		plt.colorbar()
-		plt.title('learned noise - jindal - f1: {}'.format(test_score))
+		pylab.imshow(weights, cmap='hot', interpolation='nearest')
+		pylab.xticks(np.arange(0, self.num_classes))
+		pylab.yticks(np.arange(0, self.num_classes))
+		pylab.colorbar()
+		pylab.title('learned noise - jindal - f1: {}'.format(test_score))
 
-		plt.tight_layout()
-		plt.savefig('noise_dist_learned_f1_{}.pdf'.format(test_score))
-		plt.close(fig)
+		#plt.tight_layout()
+		pylab.savefig('noise_dist_learned_f1_{}.pdf'.format(test_score))
+		#plt.close(fig)
 
 	def computeScores(self, devMatrix, testMatrix):
 		if self.labelKey.endswith('_BIO') or self.labelKey.endswith('_IOB') or self.labelKey.endswith('_IOBES'):
