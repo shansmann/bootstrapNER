@@ -5,7 +5,9 @@ import itertools
 
 true = ['O', 'O', 'B-product', 'I-product', 'O', 'O', 'O', 'B-org', 'I-org', 'O']
 pred = ['O', 'O', 'B-product', 'B-product', 'O', 'O', 'O', 'B-org', 'B-org', 'O']
-labels = ['O', 'B-product', 'I-product', 'B-organization', 'I-organization']
+
+#{'O': 0, 'product': 1, 'organization': 2}
+labels = ['O', 'product', 'organization']
 
 def load_data(test_path, pred_path):
 	test = []
@@ -17,10 +19,12 @@ def load_data(test_path, pred_path):
 		pred_content = f.readlines()
 
 	for line in test_content:
-		test.append(line.split('\t')[0])
+		label = line.split('\t')[-1].strip()
+		test.append(label)
 
 	for line in pred_content:
-		pred.append(line.split('\t')[0])
+		label = line.split('\t')[-1].strip()
+		pred.append(label)
 
 	return test, pred
 
@@ -55,15 +59,15 @@ def plot_confusion_matrix(cm, classes,
 				 color="white" if cm[i, j] > thresh else "black")
 
 	plt.tight_layout()
-	plt.ylabel('True label')
-	plt.xlabel('Predicted label')
+	plt.ylabel('Manual')
+	plt.xlabel('Automatic')
 
-man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/train.txt'
-auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/train.txt'
+man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/full.txt'
+auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/full.txt'
 
-test, pred = load_data(man_path, auto_path)
-C = confusion_matrix(test, pred, labels=labels)
-plot_confusion_matrix(C, classes=labels, normalize=True, title='Confusion matrix: Man- vs. Auto-Labels')
+man, auto = load_data(man_path, auto_path)
+C = confusion_matrix(man, auto, labels=labels)
+plot_confusion_matrix(C, classes=labels, normalize=False, title='Confusion matrix: Man- vs. Auto-Labels')
 plt.savefig('confusion_matrix_man_auto.pdf')
 plt.show()
 

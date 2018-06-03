@@ -15,12 +15,13 @@ coloredlogs.install()
 
 
 class Token:
-	def __init__(self, word, start, end, entity=config.OTHER_ENTITY, score=float(-1)):
+	def __init__(self, word, start, end, entity=config.OTHER_ENTITY, score=float(-1), plain_entity=config.OTHER_ENTITY):
 		self.word = word
 		self.start = int(start)
 		self.end = int(end)
 		self.entity = entity
 		self.score = score
+		self.plain_entity = plain_entity
 
 
 class Document:
@@ -201,10 +202,14 @@ class AvroCollection(Collection):
 						elif self.verbose:
 							logging.warning('invalid annotation found in document {}'.format(idd))
 				else:
+					forbidden_pattern = re.compile(r"(company|firm|business|organization|we|our|ours|us|it|its|I|me|my|mine|you|your|yours|they|them|theirs|their|she|her|hers|him|his|he|itself|ourselves|themselves|myself|yourself|yourselves|himself|herself|which|who|whom|whose|whichever|whoever|whomever|those|these|this. + | that. + | this | that)", re.I | re.U)
 					entity = token.get('type')
 					if word and start and end and entity:
-						tok = Token(word, start, end, entity, float(1))
-						annotations.append(tok)
+						if forbidden_pattern.match(word):
+							continue
+						else:
+							tok = Token(word, start, end, entity, float(1))
+							annotations.append(tok)
 					elif self.verbose:
 						logging.warning('invalid annotation found in document {}'.format(idd))
 
@@ -284,6 +289,7 @@ class Processor:
 								if match:
 									token.score = anno.score
 									token.entity = match + anno.entity
+									token.plain_entity = anno.entity
 						else:
 							continue
 					if (token.start - 1) in (document.sentence_breaks):
@@ -292,7 +298,11 @@ class Processor:
 					if token.word == ' ' or token.word == '':
 						token.word = 0
 					else:
-						line = '{}\t{}\t{}\t{}\n'.format(token.entity, token.start, token.end, token.word)
+						line = '{}\t{}\t{}\t{}\t{}\n'.format(token.word,
+															 token.start,
+															 token.end,
+															 token.entity,
+															 token.plain_entity)
 						record_file.write(line)
 				record_file.write('\n')
 				if n_docs % 10 == 0:

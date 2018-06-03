@@ -29,9 +29,9 @@ logger.addHandler(ch)
 ######################################################
 
 # :: Train / Dev / Test-Files ::
-datasetName = 'sensor_corpus_auto'
-dataColumns = {3:'tokens', 0:'NER_BIO'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
-labelKey = 'NER_BIO'
+datasetName = 'sensor_corpus'
+dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
+labelKey = 'NER'
 
 embeddingsPath = 'glove.840B.300d.txt' #glove word embeddings
 
@@ -67,13 +67,11 @@ data = datasets[datasetName]
 print("Dataset:", datasetName)
 print(data['mappings'].keys())
 print(data['mappings'][labelKey])
-print(list(data['mappings'][labelKey].keys()))
-print("Label key: ", labelKey)
 
 model = neuralnets.BiLSTM.BiLSTM(params)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
 model.buildModel()
-model.modelSavePath = "models/%s/%s/[DevScore]_[TestScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
-model.evaluate(100)
+model.modelSavePath = "models/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
+model.evaluate(1)
