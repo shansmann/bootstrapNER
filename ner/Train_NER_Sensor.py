@@ -74,4 +74,4 @@ model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
 model.buildModel()
 model.modelSavePath = "models/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
-model.evaluate(100)
+model.evaluate(1)

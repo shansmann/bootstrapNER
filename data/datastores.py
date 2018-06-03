@@ -202,7 +202,7 @@ class AvroCollection(Collection):
 						elif self.verbose:
 							logging.warning('invalid annotation found in document {}'.format(idd))
 				else:
-					forbidden_pattern = re.compile(r"(company|firm|business|organization|we|our|ours|us|it|its|I|me|my|mine|you|your|yours|they|them|theirs|she|her|hers|him|his|he|itself|ourselves|themselves|myself|yourself|yourselves|himself|herself|which|who|whom|whose|whichever|whoever|whomever|those|these|this. + | that. + | this | that)", re.I | re.U)
+					forbidden_pattern = re.compile(r"(company|firm|business|organization|we|our|ours|us|it|its|I|me|my|mine|you|your|yours|they|them|theirs|their|she|her|hers|him|his|he|itself|ourselves|themselves|myself|yourself|yourselves|himself|herself|which|who|whom|whose|whichever|whoever|whomever|those|these|this. + | that. + | this | that)", re.I | re.U)
 					entity = token.get('type')
 					if word and start and end and entity:
 						if forbidden_pattern.match(word):
