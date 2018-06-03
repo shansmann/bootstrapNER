@@ -111,14 +111,13 @@ class BiLSTM:
 			nnInput = batch[1:]
 			self.model.train_on_batch(nnInput, labels)
 
-	def predictLabels(self, sentences, mode=''):
+	def predictLabels(self, sentences, noise=False):
 		if self.model == None:
 			self.buildModel()
 
-		#noise_free_model = None
-		if self.params['noise'] and mode == 'test':
-			logging.warning('using model without noise mitigation for test data.')
+		if noise:
 			self.noise_free_model = self.get_jindal_free_model()
+			logging.info('noise free model created.')
 
 		predLabels = [None]*len(sentences)
 
@@ -144,8 +143,7 @@ class BiLSTM:
 				for name in features:
 					inputData[name] = np.asarray(inputData[name])
 
-				#TODO: add noise-free model initialization
-				if self.noise_free_model:
+				if self.noise_free_model and noise:
 					predictions = self.noise_free_model.predict([inputData[name] for name in features], verbose=False)
 				else:
 					predictions = self.model.predict([inputData[name] for name in features], verbose=False)
@@ -242,9 +240,6 @@ class BiLSTM:
 
 			assert(numTrainExamples == sentenceCount) #Check that no sentence was missed
 
-
-
-
 	def buildModel(self):
 		params = self.params
 
@@ -338,17 +333,17 @@ class BiLSTM:
 			output = TimeDistributed(Dense(self.num_classes,
 											activation='softmax',
 											bias=False,
-											weights=[np.identity(10, dtype='float32')]),
+											weights=[np.identity(self.num_classes, dtype='float32')]),
 									  name='softmax_jindal')(hadamard_jindal)
 
 		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
 		#model = Model(inputs=[token_embedding, casing_embedding], outputs=output)
 
 		optimizerParams = {}
-		if 'clipnorm' in self.params and self.params['clipnorm'] != None and  self.params['clipnorm'] > 0:
+		if 'clipnorm' in self.params and self.params['clipnorm'] != None and self.params['clipnorm'] > 0:
 			optimizerParams['clipnorm'] = self.params['clipnorm']
 
-		if 'clipvalue' in self.params and self.params['clipvalue'] != None and  self.params['clipvalue'] > 0:
+		if 'clipvalue' in self.params and self.params['clipvalue'] != None and self.params['clipvalue'] > 0:
 			optimizerParams['clipvalue'] = self.params['clipvalue']
 
 		if params['optimizer'].lower() == 'adam':
@@ -402,7 +397,6 @@ class BiLSTM:
 
 		total_train_time = 0
 		max_dev_score = 0
-		max_test_score = 0
 		no_improvement_since = 0
 
 		for epoch in range(epochs):
@@ -415,17 +409,15 @@ class BiLSTM:
 			total_train_time += time_diff
 			logging.info("%.2f sec for training (%.2f total)" % (time_diff, total_train_time))
 
-
 			start_time = time.time()
-			dev_score, test_score = self.computeScores(devMatrix, testMatrix)
+			dev_score = self.compute_dev_score(devMatrix)
 
 			if dev_score > max_dev_score:
 				no_improvement_since = 0
 				max_dev_score = dev_score
-				max_test_score = test_score
 
 				if self.modelSavePath != None:
-					savePath = self.modelSavePath.replace("[DevScore]", "%.4f" % dev_score).replace("[TestScore]", "%.4f" % test_score).replace("[Epoch]", str(epoch))
+					savePath = self.modelSavePath.replace("[DevScore]", "%.4f" % dev_score).replace("[Epoch]", str(epoch))
 
 					directory = os.path.dirname(savePath)
 					if not os.path.exists(directory):
@@ -433,10 +425,6 @@ class BiLSTM:
 
 					if not os.path.isfile(savePath):
 						self.model.save(savePath, False)
-
-
-						#self.save_dict_to_hdf5(self.mappings, savePath, 'mappings')
-
 						import json
 						import h5py
 						mappingsJson = json.dumps(self.mappings)
@@ -444,10 +432,6 @@ class BiLSTM:
 							h5file.attrs['mappings'] = mappingsJson
 							h5file.attrs['additionalFeatures'] = json.dumps(self.additionalFeatures)
 							h5file.attrs['maxCharLen'] = str(self.maxCharLen)
-
-						#mappingsOut = open(savePath+'.mappings', 'wb')
-						#pkl.dump(self.dataset['mappings'], mappingsOut)
-						#mappingsOut.close()
 					else:
 						logging.info("Model", savePath, "already exists")
 			else:
@@ -455,68 +439,116 @@ class BiLSTM:
 
 
 			if self.resultsOut != None:
-				self.resultsOut.write("\t".join(map(str, [epoch+1, dev_score, test_score, max_dev_score, max_test_score])))
+				self.resultsOut.write("\t".join(map(str, [epoch+1, dev_score, max_dev_score])))
 				self.resultsOut.write("\n")
 				self.resultsOut.flush()
 
-			logging.info("Max: %.4f on dev; %.4f on test" % (max_dev_score, max_test_score))
+			logging.info("Max: %.4f on dev" % (max_dev_score))
 			logging.info("%.2f sec for evaluation" % (time.time() - start_time))
 
 			if self.params['earlyStopping'] > 0 and no_improvement_since >= self.params['earlyStopping']:
 				logging.info("!!! Early stopping, no improvement after "+str(no_improvement_since)+" epochs !!!")
 				break
-		# unplug model
-		#logging.warning(self.model.summary())
-		#self.remove_jindal()
-		#logging.warning(self.model.summary())
-		# evaluate model on test data
-		#dev_score, test_score = self.computeScores(devMatrix, testMatrix)
-		#logging.info("%.4f on test" % (test_score))
-		if self.verboseBuild and self.params["noise"]:
-			self.plot_noise_dists(max_test_score)
 
-	def plot_noise_dists(self, test_score):
-		labels = list(self.mappings['NER_BIO'].keys())
-		logging.info(labels)
+		logging.info("--------- Evaluation on test data ---------")
+		#TODO: calculate noise free model score on test data
+		if self.params.get('noise', False):
+			logging.info("creating noise free model for test evaluation")
+			test_score = self.compute_test_score(testMatrix, noise=True)
+		else:
+			test_score = self.compute_test_score(testMatrix, noise=False)
+		
+		if self.verboseBuild and self.params["noise"]:
+			self.plot_noise_dist(test_score)
+
+	def plot_noise_dist(self, test_score):
+		labels = [0] * self.num_classes
+		for key, value in self.mappings[self.labelKey].items():
+			labels[value] = key
 		weights = self.model.layers[-1].get_weights()[0]
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
-		pylab.xticks(np.arange(self.num_classes), labels)
-		pylab.yticks(np.arange(self.num_classes), labels, rotation=45)
+		pylab.xticks(np.arange(self.num_classes), labels, rotation=45)
+		pylab.yticks(np.arange(self.num_classes), labels)
 		pylab.colorbar()
-		pylab.title('learned noise - jindal - f1: {}'.format(test_score))
+		pylab.title('learned noise - jindal - score: {}'.format(test_score))
 
 		pylab.tight_layout()
 		pylab.savefig('noise_dist_learned_f1_{}.pdf'.format(test_score))
-		#plt.close(fig)
 
-	def computeScores(self, devMatrix, testMatrix):
+	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or self.labelKey.endswith('_IOB') or self.labelKey.endswith('_IOBES'):
-			logging.info("computing F1 Scores.")
-			return self.computeF1Scores(devMatrix, testMatrix)
+			dev_pre, dev_rec, dev_f1 = self.computeF1(devMatrix)
+			if verbose:
+				logging.info("computing F1 score.")
+				logging.info("Dev-Data: Prec: %.3f, Rec: %.3f, F1: %.4f" % (dev_pre, dev_rec, dev_f1))
+			return dev_f1
 		else:
-			return self.computeAccScores(devMatrix, testMatrix)
+			dev_acc = self.computeAcc(devMatrix)
+			if verbose:
+				logging.info("computing accuracy.")
+				logging.info("Dev-Data: Acc: %.3f" % (dev_acc))
+			return dev_acc
 
-	def computeF1Scores(self, devMatrix, testMatrix):
-		dev_pre, dev_rec, dev_f1 = self.computeF1(devMatrix, 'dev')
-		logging.info("Dev-Data: Prec: %.3f, Rec: %.3f, F1: %.4f" % (dev_pre, dev_rec, dev_f1))
-
-		if self.devAndTestEqual:
-			test_pre, test_rec, test_f1 = dev_pre, dev_rec, dev_f1
+	def compute_test_score(self, testMatrix, verbose=True, noise=False):
+		if self.labelKey.endswith('_BIO') or self.labelKey.endswith('_IOB') or self.labelKey.endswith('_IOBES'):
+			test_pre, test_rec, test_f1 =  self.computeF1(testMatrix, noise)
+			if verbose:
+				logging.info("computing F1 score.")
+				logging.info("Test-Data: Prec: %.3f, Rec: %.3f, F1: %.4f" % (test_pre, test_rec, test_f1))
+			return test_f1
 		else:
-			test_pre, test_rec, test_f1 = self.computeF1(testMatrix, 'test')
-		logging.info("Test-Data: Prec: %.3f, Rec: %.3f, F1: %.4f" % (test_pre, test_rec, test_f1))
+			test_acc = self.computeAcc(testMatrix, noise)
+			if verbose:
+				logging.info("computing accuracy.")
+				logging.info("Test-Data: Acc: %.3f" % (test_acc))
+			return test_acc
 
-		return dev_f1, test_f1
+	def computeF1(self, sentences, noise=False):
+		correctLabels = []
+		predLabels = []
+		paddedPredLabels = self.predictLabels(sentences, noise)
 
-	def computeAccScores(self, devMatrix, testMatrix):
-		dev_acc = self.computeAcc(devMatrix)
-		test_acc = self.computeAcc(testMatrix)
+		for idx in range(len(sentences)):
+			unpaddedCorrectLabels = []
+			unpaddedPredLabels = []
+			for tokenIdx in range(len(sentences[idx]['tokens'])):
+				if sentences[idx]['tokens'][tokenIdx] != 0: #Skip padding tokens
+					unpaddedCorrectLabels.append(sentences[idx][self.labelKey][tokenIdx])
+					unpaddedPredLabels.append(paddedPredLabels[idx][tokenIdx])
 
-		logging.info("Dev-Data: Accuracy: %.4f" % (dev_acc))
-		logging.info("Test-Data: Accuracy: %.4f" % (test_acc))
+			correctLabels.append(unpaddedCorrectLabels)
+			predLabels.append(unpaddedPredLabels)
 
-		return dev_acc, test_acc
 
+		encodingScheme = self.labelKey[self.labelKey.index('_')+1:]
+
+		pre, rec, f1 = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'O', encodingScheme)
+		pre_b, rec_b, f1_b = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'B', encodingScheme)
+
+
+		if f1_b > f1:
+			logging.debug("Setting incorrect tags to B yields improvement from %.4f to %.4f" % (f1, f1_b))
+			pre, rec, f1 = pre_b, rec_b, f1_b
+
+
+		if self.writeOutput:
+			self.writeOutputToFile(sentences, predLabels, '%.4f_%s' % (f1))
+		return pre, rec, f1
+
+	def computeAcc(self, sentences, noise=False):
+		correctLabels = [sentences[idx][self.labelKey] for idx in range(len(sentences))]
+		predLabels = self.predictLabels(sentences, noise)
+
+		numLabels = 0
+		numCorrLabels = 0
+		for sentenceId in range(len(correctLabels)):
+			for tokenId in range(len(correctLabels[sentenceId])):
+				numLabels += 1
+				if correctLabels[sentenceId][tokenId] == predLabels[sentenceId][tokenId]:
+					numCorrLabels += 1
+
+
+		return numCorrLabels/float(numLabels)
 
 	def tagSentences(self, sentences):
 
@@ -545,38 +577,6 @@ class BiLSTM:
 
 		return labels
 
-	def computeF1(self, sentences, name=''):
-		correctLabels = []
-		predLabels = []
-		paddedPredLabels = self.predictLabels(sentences, name)
-
-		for idx in range(len(sentences)):
-			unpaddedCorrectLabels = []
-			unpaddedPredLabels = []
-			for tokenIdx in range(len(sentences[idx]['tokens'])):
-				if sentences[idx]['tokens'][tokenIdx] != 0: #Skip padding tokens
-					unpaddedCorrectLabels.append(sentences[idx][self.labelKey][tokenIdx])
-					unpaddedPredLabels.append(paddedPredLabels[idx][tokenIdx])
-
-			correctLabels.append(unpaddedCorrectLabels)
-			predLabels.append(unpaddedPredLabels)
-
-
-		encodingScheme = self.labelKey[self.labelKey.index('_')+1:]
-
-		pre, rec, f1 = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'O', encodingScheme)
-		pre_b, rec_b, f1_b = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'B', encodingScheme)
-
-
-		if f1_b > f1:
-			logging.debug("Setting incorrect tags to B yields improvement from %.4f to %.4f" % (f1, f1_b))
-			pre, rec, f1 = pre_b, rec_b, f1_b
-
-
-		if self.writeOutput:
-			self.writeOutputToFile(sentences, predLabels, '%.4f_%s' % (f1, name))
-		return pre, rec, f1
-
 	def writeOutputToFile(self, sentences, predLabels, name):
 			outputName = 'tmp/'+name
 			fOut = open(outputName, 'w')
@@ -594,24 +594,7 @@ class BiLSTM:
 
 			fOut.close()
 
-
-
-	def computeAcc(self, sentences):
-		correctLabels = [sentences[idx][self.labelKey] for idx in range(len(sentences))]
-		predLabels = self.predictLabels(sentences)
-
-		numLabels = 0
-		numCorrLabels = 0
-		for sentenceId in range(len(correctLabels)):
-			for tokenId in range(len(correctLabels[sentenceId])):
-				numLabels += 1
-				if correctLabels[sentenceId][tokenId] == predLabels[sentenceId][tokenId]:
-					numCorrLabels += 1
-
-
-		return numCorrLabels/float(numLabels)
-
-	def loadModel(self, modelPath="/mnt/hdd/experiments/shansmann/bootstrapNER/ner/models/sensor_corpus_auto/NER_BIO/0.0634_0.0345_7.h5"):
+	def loadModel(self, modelPath='models/conll/NER_BIO/0.3745_0.0338_1.h5'):
 		import h5py
 		import json
 		from neuralnets.keraslayers.ChainCRF import create_custom_objects
