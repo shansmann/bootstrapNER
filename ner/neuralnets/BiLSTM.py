@@ -478,7 +478,8 @@ class BiLSTM:
 	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or \
 				self.labelKey.endswith('_IOB') or \
-				self.labelKey.endswith('_IOBES'):
+				self.labelKey.endswith('_IOBES') or \
+				self.labelKey == 'NER':
 			dev_pre, dev_rec, dev_f1 = self.computeF1(devMatrix)
 			if verbose:
 				logging.info("computing F1 score.")
@@ -494,7 +495,8 @@ class BiLSTM:
 	def compute_test_score(self, testMatrix, verbose=True, noise=False):
 		if self.labelKey.endswith('_BIO') or \
 				self.labelKey.endswith('_IOB') or \
-				self.labelKey.endswith('_IOBES'):
+				self.labelKey.endswith('_IOBES') or \
+				self.labelKey == 'NER':
 			test_pre, test_rec, test_f1 =  self.computeF1(testMatrix, noise)
 			if verbose:
 				logging.info("computing F1 score.")

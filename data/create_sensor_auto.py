@@ -3,8 +3,8 @@ import time
 from datastores import AvroCollection, Processor
 
 
-path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/sensor_corpus_auto/2.avro'
-opath = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/sensor_corpus_auto/train2.txt'
+path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/sensor_corpus/2.avro'
+opath = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/sensor_corpus/train2.txt'
 
 sensor = AvroCollection(name='product', mode='auto', verbose=True)
 start = time.time()
