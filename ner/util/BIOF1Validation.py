@@ -83,7 +83,7 @@ def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingS
 
 def convertNERtoBIO(dataset):
     """ Convert inplace NER encoding to BIO encoding """
-    # get all present labels
+    # get unique present labels
     unique_labels = list(set(x for l in dataset for x in l))
     # first letter of present ner tags without Other
     labels = [x[0] for x in unique_labels if x[0] != 'O']
@@ -91,13 +91,18 @@ def convertNERtoBIO(dataset):
         prevVal = 'O'
         for pos in range(len(sentence)):
             firstChar = sentence[pos][0]
+            change = False
             if firstChar in labels:
-                if prevVal == 'O':
+                if prevVal != firstChar:
                     sentence[pos] = 'B-'+sentence[pos] #Change to begin tag
-                elif prevVal == firstChar:
+                    change = True
+                else:
                     sentence[pos] = 'I-'+sentence[pos] #Change to inside tag
-            prevVal = sentence[pos]
-
+                    change = True
+            if change:
+                prevVal = sentence[pos][2]
+            else:
+                prevVal = sentence[pos][0]
 
 def convertIOBtoBIO(dataset):
     """ Convert inplace IOB encoding to BIO encoding """
