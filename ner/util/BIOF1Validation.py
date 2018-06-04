@@ -94,7 +94,7 @@ def convertNERtoBIO(dataset):
             if firstChar in labels:
                 if prevVal == 'O':
                     sentence[pos] = 'B-'+sentence[pos] #Change to begin tag
-                else:
+                elif prevVal == firstChar:
                     sentence[pos] = 'I-'+sentence[pos] #Change to inside tag
             prevVal = sentence[pos]
 
