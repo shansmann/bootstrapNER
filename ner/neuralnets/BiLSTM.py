@@ -473,13 +473,12 @@ class BiLSTM:
 		pylab.title('learned noise - jindal - score: {}'.format(test_score))
 
 		pylab.tight_layout()
-		pylab.savefig('noise_dist_learned_{}_{}.pdf'.format(self.dataset, test_score))
+		pylab.savefig('noise_dist_learned_{}.pdf'.format(test_score))
 
 	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or \
 				self.labelKey.endswith('_IOB') or \
-				self.labelKey.endswith('_IOBES') or \
-				self.labelKey == 'NER':
+				self.labelKey.endswith('_IOBES'):
 			dev_pre, dev_rec, dev_f1 = self.computeF1(devMatrix)
 			if verbose:
 				logging.info("computing F1 score.")
@@ -495,8 +494,7 @@ class BiLSTM:
 	def compute_test_score(self, testMatrix, verbose=True, noise=False):
 		if self.labelKey.endswith('_BIO') or \
 				self.labelKey.endswith('_IOB') or \
-				self.labelKey.endswith('_IOBES') or \
-				self.labelKey == 'NER':
+				self.labelKey.endswith('_IOBES'):
 			test_pre, test_rec, test_f1 =  self.computeF1(testMatrix, noise)
 			if verbose:
 				logging.info("computing F1 score.")
