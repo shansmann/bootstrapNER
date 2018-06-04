@@ -10,5 +10,5 @@ data/__pycache__/
 __pychache__
 /ner/jindal/*.npy
 /ner/glove.840B.300d.txt
-/ner/models/*
+/ner/models/*/*.h5
 /ner/pkl/*.pkl

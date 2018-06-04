@@ -30,8 +30,8 @@ logger.addHandler(ch)
 
 # :: Train / Dev / Test-Files ::
 datasetName = 'product_corpus_man'
-dataColumns = {3:'tokens', 0:'NER_BIO'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
-labelKey = 'NER_BIO'
+dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
+labelKey = 'NER'
 
 embeddingsPath = 'glove.840B.300d.txt' #glove word embeddings
 
@@ -73,5 +73,5 @@ model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
 model.buildModel()
-model.modelSavePath = "models/%s/%s/[DevScore]_[TestScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
-model.evaluate(100)
+model.modelSavePath = "models/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
+model.evaluate(10)

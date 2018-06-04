@@ -42,7 +42,7 @@ params = {'dropout': [0.25, 0.25],
           'optimizer': 'nadam',
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 32,
-          'noise': True}
+          'noise': False}
 
 frequencyThresholdUnknownTokens = 1000 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
@@ -74,4 +74,4 @@ model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
 model.buildModel()
 #model.modelSavePath = "models/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
-model.evaluate(1)
+model.evaluate(10)

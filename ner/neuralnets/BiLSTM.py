@@ -473,10 +473,13 @@ class BiLSTM:
 		pylab.title('learned noise - jindal - score: {}'.format(test_score))
 
 		pylab.tight_layout()
-		pylab.savefig('noise_dist_learned_f1_{}.pdf'.format(test_score))
+		pylab.savefig('noise_dist_learned_{}_{}.pdf'.format(self.dataset, test_score))
 
 	def compute_dev_score(self, devMatrix, verbose=True):
-		if self.labelKey.endswith('_BIO') or self.labelKey.endswith('_IOB') or self.labelKey.endswith('_IOBES'):
+		if self.labelKey.endswith('_BIO') or \
+				self.labelKey.endswith('_IOB') or \
+				self.labelKey.endswith('_IOBES') or \
+				self.labelKey == 'NER':
 			dev_pre, dev_rec, dev_f1 = self.computeF1(devMatrix)
 			if verbose:
 				logging.info("computing F1 score.")
@@ -490,7 +493,10 @@ class BiLSTM:
 			return dev_acc
 
 	def compute_test_score(self, testMatrix, verbose=True, noise=False):
-		if self.labelKey.endswith('_BIO') or self.labelKey.endswith('_IOB') or self.labelKey.endswith('_IOBES'):
+		if self.labelKey.endswith('_BIO') or \
+				self.labelKey.endswith('_IOB') or \
+				self.labelKey.endswith('_IOBES') or \
+				self.labelKey == 'NER':
 			test_pre, test_rec, test_f1 =  self.computeF1(testMatrix, noise)
 			if verbose:
 				logging.info("computing F1 score.")
@@ -519,8 +525,10 @@ class BiLSTM:
 			correctLabels.append(unpaddedCorrectLabels)
 			predLabels.append(unpaddedPredLabels)
 
-
-		encodingScheme = self.labelKey[self.labelKey.index('_')+1:]
+		try:
+			encodingScheme = self.labelKey[self.labelKey.index('_')+1:]
+		except:
+			encodingScheme = 'NER'
 
 		pre, rec, f1 = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'O', encodingScheme)
 		pre_b, rec_b, f1_b = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'B', encodingScheme)
