@@ -44,7 +44,7 @@ def compute_precision_token_basis(guessed_sentences, correct_sentences, O_Label)
     return precision
 
 
-def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingScheme='BIO'): 
+def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingScheme='BIO'):
     label_pred = []    
     for sentence in predictions:
         label_pred.append([idx2Label[element] for element in sentence])
@@ -62,6 +62,9 @@ def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingS
     elif encodingScheme == 'IOB':
         convertIOBtoBIO(label_pred)
         convertIOBtoBIO(label_correct)
+    elif encodingScheme == 'NER':
+        convertNERtoBIO(label_pred)
+        convertNERtoBIO(label_correct)
             
                     
     
@@ -77,6 +80,18 @@ def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingS
         f1 = 2.0 * prec * rec / (prec + rec);
         
     return prec, rec, f1
+
+def convertNERtoBIO(dataset):
+    """ Convert inplace NER encoding to BIO encoding """
+    for sentence in dataset:
+        prevVal = 'O'
+        for pos in range(len(sentence)):
+            firstChar = sentence[pos][0]
+            if firstChar == 'I':
+                if prevVal == 'O' or prevVal[1:] != sentence[pos][1:]:
+                    sentence[pos] = 'B'+sentence[pos][1:] #Change to begin tag
+
+            prevVal = sentence[pos]
 
 
 def convertIOBtoBIO(dataset):

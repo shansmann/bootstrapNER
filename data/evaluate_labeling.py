@@ -2,6 +2,7 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
+from collections import Counter
 
 true = ['O', 'O', 'B-product', 'I-product', 'O', 'O', 'O', 'B-org', 'I-org', 'O']
 pred = ['O', 'O', 'B-product', 'B-product', 'O', 'O', 'O', 'B-org', 'B-org', 'O']
@@ -29,6 +30,7 @@ def load_data(test_path, pred_path):
 	return test, pred
 
 def plot_confusion_matrix(cm, classes,
+						  man, auto,
 						  normalize=False,
 						  title='Confusion matrix',
 						  cmap=plt.cm.Blues):
@@ -61,13 +63,34 @@ def plot_confusion_matrix(cm, classes,
 	plt.tight_layout()
 	plt.ylabel('Manual')
 	plt.xlabel('Automatic')
+	plt.savefig('confusion_matrix_man_auto.pdf')
+	plt.show()
+
+def plot_histo(y, labels, name):
+	y = Counter(y)
+	tmp = {key: value for key, value in y.items() if key in labels}
+	labels, values = zip(*Counter(tmp).items())
+
+	indexes = np.arange(len(labels))
+	width = 0.5
+
+	plt.title('Histogram {}'.format(name))
+	plt.ylabel('counter')
+	plt.bar(indexes, values, width, align='edge')
+	plt.xticks(indexes + width * 0.5, labels)
+
+	plt.savefig('histo_{}.pdf'.format(name))
+	plt.show()
+
 
 man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/full.txt'
 auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/full.txt'
 
 man, auto = load_data(man_path, auto_path)
+print(Counter(man))
+print(Counter(auto))
 C = confusion_matrix(man, auto, labels=labels)
-plot_confusion_matrix(C, classes=labels, normalize=False, title='Confusion matrix: Man- vs. Auto-Labels')
-plt.savefig('confusion_matrix_man_auto.pdf')
-plt.show()
+plot_confusion_matrix(C, labels, man, auto, normalize=False, title='Confusion matrix: Man- vs. Auto-Labels')
+plot_histo(man, ['product', 'organization'], 'man')
+plot_histo(auto, ['product', 'organization'], 'auto')
 
