@@ -330,14 +330,16 @@ class BiLSTM:
 			hadamard_jindal = TimeDistributed(Dropout(.1),
 											  name='hadamard_jindal')(output)
 
-			output = TimeDistributed(Dense(self.num_classes,
-										   activation='softmax',
+			dense_jindal = TimeDistributed(Dense(self.num_classes,
+										   activation='linear',
 										   bias=False,
 										   kernel_initializer='identity',
-										   trainable=True,
-										   name='dense_jindal'),
-									 name='softmax_jindal',
+										   trainable=True),
+									 name='dense_jindal',
 									 trainable=True)(hadamard_jindal)
+
+			output = TimeDistributed(Activation('softmax'),
+									 name='softmax_jindal')(dense_jindal)
 
 		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
 
@@ -369,9 +371,9 @@ class BiLSTM:
 			model.summary()
 			logging.info(model.get_config())
 			logging.debug("Optimizer: %s, %s" % (str(type(opt)), str(opt.get_config())))
-			plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
-			new_model = Model(inputs=model.inputs, outputs=model.layers[-3].output)
-			plot_model(new_model, to_file='new_model.png', show_shapes=True, show_layer_names=True)
+			plot_model(model, to_file='model_with_jindal.png', show_shapes=True, show_layer_names=True)
+			new_model = Model(inputs=model.inputs, outputs=model.layers[-4].output)
+			plot_model(new_model, to_file='model_wo_jindal.png', show_shapes=True, show_layer_names=True)
 
 	def storeResults(self, resultsFilepath):
 		if resultsFilepath != None:
@@ -384,7 +386,7 @@ class BiLSTM:
 			self.resultsOut = None
 
 	def get_jindal_free_model(self):
-		new_model = Model(inputs=self.model.inputs, outputs=self.model.layers[-3].output)
+		new_model = Model(inputs=self.model.inputs, outputs=self.model.layers[-4].output)
 		return new_model
 
 	def evaluate(self, epochs):
@@ -465,12 +467,9 @@ class BiLSTM:
 		labels = [0] * self.num_classes
 		for key, value in self.mappings[self.labelKey].items():
 			labels[value] = key
-		layer = self.model.layers[-1].layer
+		layer = self.model.layers[-2].layer
 		name = layer.name
 		weights = layer.get_weights()[0]
-		logging.info("weights from layer {}: {}".format(name, weights))
-		# test_layer = self.model.layers[-1]
-		# logging.info("weights from layer {}: {}".format(test_layer.name, test_layer.get_weights()[0]))
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
 		pylab.xticks(np.arange(self.num_classes), labels, rotation=45)
 		pylab.yticks(np.arange(self.num_classes), labels)
