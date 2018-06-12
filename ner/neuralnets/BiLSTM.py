@@ -327,19 +327,6 @@ class BiLSTM:
 
 		# jindals noise model
 		if self.params['noise']:
-			"""
-			hadamard_jindal = TimeDistributed(Dropout(.1),
-											  name='hadamard_jindal')(output)
-			output = TimeDistributed(Dense(self.num_classes,
-											activation='softmax',
-											bias=False,
-											weights=[np.identity(self.num_classes, dtype='float32')]),
-									  name='softmax_jindal')(hadamard_jindal)
-
-			identity = [np.identity(self.num_classes, dtype='float32')]
-			logging.info('weights initialized with:')
-			logging.info(identity)
-			"""
 			output = TimeDistributed(Dense(self.num_classes,
 										   activation='linear',
 										   bias=False,
@@ -348,18 +335,7 @@ class BiLSTM:
 										   name='dense_jindal'),
 									 name='softmax_jindal',
 									 trainable=False)(output)
-			"""
-			identity = TimeDistributed(Dense(self.num_classes,
-											 bias=False,
-											 kernel_initializer='identity',
-											 trainable=False,
-											 name='dense_jindal'),
-									   name='time_dist_dense',
-									   trainable=False)(output)
-			output = TimeDistributed(Activation('softmax',
-												name='softmax_jindal'),
-									 name='time_dist_softmax')(identity)
-			"""
+
 		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
 
 		optimizerParams = {}
