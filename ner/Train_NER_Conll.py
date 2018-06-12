@@ -18,7 +18,7 @@ logger.setLevel(loggingLevel)
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(loggingLevel)
-formatter = logging.Formatter('%(message)s')
+formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
@@ -42,7 +42,7 @@ params = {'dropout': [0.25, 0.25],
           'optimizer': 'nadam',
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 32,
-          'noise': False}
+          'noise': True}
 
 frequencyThresholdUnknownTokens = 1000 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
@@ -64,9 +64,9 @@ pickleFile = util.preprocessing.perpareDataset(embeddingsPath, datasetFiles, fre
 embeddings, word2Idx, datasets = util.preprocessing.loadDatasetPickle(pickleFile)
 data = datasets[datasetName]
 
-print("Dataset:", datasetName)
-print(data['mappings'].keys())
-print(data['mappings'][labelKey])
+logging.info("Dataset: {}".format(datasetName))
+logging.info(data['mappings'].keys())
+logging.info(data['mappings'][labelKey])
 
 model = neuralnets.BiLSTM.BiLSTM(params)
 model.setMappings(embeddings, data['mappings'])
@@ -74,4 +74,4 @@ model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
 model.buildModel()
 #model.modelSavePath = "models/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
-model.evaluate(10)
+model.evaluate(5)

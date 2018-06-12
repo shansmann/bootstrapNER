@@ -1,13 +1,15 @@
 import glob
 import os
-from avro.datafile import DataFileReader
-from avro.io import DatumReader
+import re
+from collections import defaultdict
 from os.path import basename
-from nltk.tokenize import word_tokenize
-from nltk.tokenize.punkt import PunktSentenceTokenizer
+
 import logging, coloredlogs
 import hashlib
-import re
+from avro.datafile import DataFileReader
+from avro.io import DatumReader
+from nltk.tokenize import word_tokenize
+from nltk.tokenize.punkt import PunktSentenceTokenizer
 
 import config
 
@@ -143,6 +145,7 @@ class AvroCollection(Collection):
 	def __init__(self, name, mode, verbose=False):
 		self.mode = mode
 		self.verbose = verbose
+		self.anno_counts = defaultdict(int)
 		super(Collection, self).__init__()
 
 	def parse_text_data(self, path):
@@ -198,6 +201,7 @@ class AvroCollection(Collection):
 						score = concept_meta.get('ms_concept_graph_rep_e_c', None)
 						if word and start and end and entity and score:
 							tok = Token(word, start, end, entity.replace('boot_ner_', ''), float(score))
+							self.anno_counts[entity.replace('boot_ner_', '')] += 1
 							annotations.append(tok)
 						elif self.verbose:
 							logging.warning('invalid annotation found in document {}'.format(idd))
@@ -230,6 +234,7 @@ class Processor:
 		self.entity_overlaps = 0
 		self.index_errors = 0
 		self.verbose = verbose
+		self.anno_counts = defaultdict(int)
 
 	def _match_tokens(self, token, anno):
 		prefix = ''
@@ -298,6 +303,7 @@ class Processor:
 					if token.word == ' ' or token.word == '':
 						token.word = 0
 					else:
+						self.anno_counts[token.plain_entity] += 1
 						line = '{}\t{}\t{}\t{}\t{}\n'.format(token.word,
 															 token.start,
 															 token.end,
