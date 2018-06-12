@@ -71,7 +71,7 @@ def perpareDataset(embeddingsPath, datasetFiles, frequencyThresholdUnknownTokens
         reducePretrainedEmbeddings: Set to true, then only the embeddings needed for training will be loaded
         commentSymbol: If not None, lines starting with this symbol will be skipped
     """
-    embeddingsName = os.path.splitext(embeddingsPath)[0]
+    embeddingsName = os.path.splitext(os.path.basename(embeddingsPath))[0]
     datasetName = "_".join(sorted([datasetFile[0] for datasetFile in datasetFiles])+[embeddingsName])
     outputPath = 'pkl/'+datasetName+'.pkl'
     
