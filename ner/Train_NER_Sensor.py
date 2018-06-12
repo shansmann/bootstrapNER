@@ -18,7 +18,7 @@ logger.setLevel(loggingLevel)
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(loggingLevel)
-formatter = logging.Formatter('%(message)s')
+formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
@@ -64,9 +64,9 @@ pickleFile = util.preprocessing.perpareDataset(embeddingsPath, datasetFiles, fre
 embeddings, word2Idx, datasets = util.preprocessing.loadDatasetPickle(pickleFile)
 data = datasets[datasetName]
 
-print("Dataset:", datasetName)
-print(data['mappings'].keys())
-print(data['mappings'][labelKey])
+logging.info("Dataset: {}".format(datasetName))
+logging.info(data['mappings'].keys())
+logging.info(data['mappings'][labelKey])
 
 model = neuralnets.BiLSTM.BiLSTM(params)
 model.setMappings(embeddings, data['mappings'])
