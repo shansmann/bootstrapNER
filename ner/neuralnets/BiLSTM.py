@@ -309,14 +309,14 @@ class BiLSTM:
 
 		bi_lstm_1 = Bidirectional(LSTM(params['LSTM-Size'][0],
 									   return_sequences=True,
-									   dropout_W=params['dropout'][0],
-									   dropout_U=params['dropout'][1]),
+									   dropout=params['dropout'][0],
+									   recurrent_dropout=params['dropout'][1]),
 								  name="BiLSTM_1")(merged)
 
 		bi_lstm_2 = Bidirectional(LSTM(params['LSTM-Size'][1],
 									   return_sequences=True,
-									   dropout_W=params['dropout'][0],
-									   dropout_U=params['dropout'][1]),
+									   dropout=params['dropout'][0],
+									   recurrent_dropout=params['dropout'][1]),
 								  name="BiLSTM_2")(bi_lstm_1)
 
 		self.num_classes = len(self.dataset['mappings'][self.labelKey])
@@ -332,7 +332,7 @@ class BiLSTM:
 
 			dense_jindal = TimeDistributed(Dense(self.num_classes,
 										   activation='linear',
-										   bias=False,
+										   use_bias=False,
 										   kernel_initializer='identity',
 										   trainable=True),
 									 name='dense_jindal',
