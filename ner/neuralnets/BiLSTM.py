@@ -19,6 +19,7 @@ import matplotlib
 matplotlib.use('Agg')  # Must be before importing matplotlib.pyplot or pylab!
 import pylab
 import keras
+from keras import backend as K
 from keras.models import Model
 from keras.layers import *
 from keras.optimizers import *
@@ -30,6 +31,8 @@ if (sys.version_info > (3, 0)):
 	import pickle as pkl
 else:  # Python 2.7 imports
 	import cPickle as pkl
+
+K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads=4, inter_op_parallelism_threads=4)))
 
 
 class BiLSTM:
