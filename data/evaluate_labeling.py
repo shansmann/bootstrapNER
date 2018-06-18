@@ -69,14 +69,13 @@ def plot_histo(y, labels, name):
 	indexes = np.arange(len(labels))
 	width = 0.5
 
-	plt.title('Histogram {}'.format(name))
+	plt.title('Histogram {} - token basis'.format(name))
 	plt.ylabel('counter')
 	plt.bar(indexes, values, width, align='edge')
 	plt.xticks(indexes + width * 0.5, labels)
 
 	plt.savefig('histo_{}.pdf'.format(name))
 	plt.show()
-
 
 def compute_precision_token_basis(guessed_sentences, correct_sentences, O_Label):
 	assert (len(guessed_sentences) == len(correct_sentences))
@@ -111,6 +110,7 @@ def compute_f1_token_basis(predictions, correct, O_Label):
 
 	return prec, rec, f1
 
+
 man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/full.txt'
 auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/full.txt'
 
@@ -124,10 +124,11 @@ print(Counter(flat_pred))
 print(Counter(flat_test))
 
 C = confusion_matrix(flat_test, flat_pred, labels=labels)
-plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=False, title='Confusion matrix: Man- vs. Auto-Labels')
+plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=False, title='Confusion matrix: Man- vs. Auto-Labels - token basis')
 
 print(f1_score(flat_test, flat_pred, average='micro', labels=['product', 'organization']))
 print(compute_f1_token_basis(pred, test, 'O'))
-#plot_histo(test, ['product', 'organization'], 'man')
-#plot_histo(pred, ['product', 'organization'], 'auto')
+
+plot_histo(flat_test, ['product', 'organization'], 'man')
+plot_histo(flat_pred, ['product', 'organization'], 'auto')
 
