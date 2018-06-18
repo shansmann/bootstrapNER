@@ -1,4 +1,4 @@
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
@@ -10,24 +10,19 @@ pred = ['O', 'O', 'B-product', 'B-product', 'O', 'O', 'O', 'B-org', 'B-org', 'O'
 #{'O': 0, 'product': 1, 'organization': 2}
 labels = ['O', 'product', 'organization']
 
-def load_data(test_path, pred_path):
-	test = []
-	pred = []
-	with open(test_path) as f:
-		test_content = f.readlines()
-
-	with open(pred_path) as f:
-		pred_content = f.readlines()
-
-	for line in test_content:
-		label = line.split('\t')[-1].strip()
-		test.append(label)
-
-	for line in pred_content:
-		label = line.split('\t')[-1].strip()
-		pred.append(label)
-
-	return test, pred
+def read_tagging(path):
+	data = []
+	with open(path) as f:
+		content = [line.strip() for line in f]
+		sent = []
+		for line in content:
+			if line=='':
+				data.append(sent)
+				sent = []
+			else:
+				line_stripped = line.split('\t')[-1]
+				sent.append(line_stripped)
+	return data
 
 def plot_confusion_matrix(cm, classes,
 						  man, auto,
@@ -86,11 +81,19 @@ def plot_histo(y, labels, name):
 man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/full.txt'
 auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/full.txt'
 
-man, auto = load_data(man_path, auto_path)
-print(Counter(man))
-print(Counter(auto))
-C = confusion_matrix(man, auto, labels=labels)
-plot_confusion_matrix(C, labels, man, auto, normalize=False, title='Confusion matrix: Man- vs. Auto-Labels')
-plot_histo(man, ['product', 'organization'], 'man')
-plot_histo(auto, ['product', 'organization'], 'auto')
+pred = read_tagging(auto_path)
+test = read_tagging(man_path)
+
+flat_pred = [item for sublist in pred for item in sublist]
+flat_test = [item for sublist in test for item in sublist]
+
+print(Counter(flat_pred))
+print(Counter(flat_test))
+
+C = confusion_matrix(flat_test, flat_pred, labels=labels)
+plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=False, title='Confusion matrix: Man- vs. Auto-Labels')
+
+print(f1_score(flat_test, flat_pred, average=None, labels=['product', 'organization']))
+#plot_histo(test, ['product', 'organization'], 'man')
+#plot_histo(pred, ['product', 'organization'], 'auto')
 
