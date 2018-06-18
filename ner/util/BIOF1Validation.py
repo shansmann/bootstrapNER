@@ -15,7 +15,7 @@ def compute_f1_token_basis(predictions, correct, O_Label):
     
     f1 = 0
     if (rec+prec) > 0:
-        f1 = 2.0 * prec * rec / (prec + rec);
+        f1 = 2.0 * prec * rec / (prec + rec)
         
     return prec, rec, f1
 

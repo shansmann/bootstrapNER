@@ -78,6 +78,39 @@ def plot_histo(y, labels, name):
 	plt.show()
 
 
+def compute_precision_token_basis(guessed_sentences, correct_sentences, O_Label):
+	assert (len(guessed_sentences) == len(correct_sentences))
+	correctCount = 0
+	count = 0
+
+	for sentenceIdx in range(len(guessed_sentences)):
+		guessed = guessed_sentences[sentenceIdx]
+		correct = correct_sentences[sentenceIdx]
+		assert (len(guessed) == len(correct))
+		for idx in range(len(guessed)):
+
+			if guessed[idx] != O_Label:
+				count += 1
+
+				if guessed[idx] == correct[idx]:
+					correctCount += 1
+
+	precision = 0
+	if count > 0:
+		precision = float(correctCount) / count
+
+	return precision
+
+def compute_f1_token_basis(predictions, correct, O_Label):
+	prec = compute_precision_token_basis(predictions, correct, O_Label)
+	rec = compute_precision_token_basis(correct, predictions, O_Label)
+
+	f1 = 0
+	if (rec + prec) > 0:
+		f1 = 2.0 * prec * rec / (prec + rec)
+
+	return prec, rec, f1
+
 man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/full.txt'
 auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/full.txt'
 
@@ -93,7 +126,8 @@ print(Counter(flat_test))
 C = confusion_matrix(flat_test, flat_pred, labels=labels)
 plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=False, title='Confusion matrix: Man- vs. Auto-Labels')
 
-print(f1_score(flat_test, flat_pred, average=None, labels=['product', 'organization']))
+print(f1_score(flat_test, flat_pred, average='micro', labels=['product', 'organization']))
+print(compute_f1_token_basis(pred, test, 'O'))
 #plot_histo(test, ['product', 'organization'], 'man')
 #plot_histo(pred, ['product', 'organization'], 'auto')
 

@@ -552,12 +552,15 @@ class BiLSTM:
 		except:
 			encodingScheme = 'NER'
 
-		pre, rec, f1 = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'O', encodingScheme)
-		pre_b, rec_b, f1_b = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'B', encodingScheme)
+		#pre, rec, f1 = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'O', encodingScheme)
+		#pre_b, rec_b, f1_b = BIOF1Validation.compute_f1(predLabels, correctLabels, self.idx2Label, 'B', encodingScheme)
 
-		if f1_b > f1:
-			logging.debug("Setting incorrect tags to B yields improvement from %.4f to %.4f" % (f1, f1_b))
-			pre, rec, f1 = pre_b, rec_b, f1_b
+		#if f1_b > f1:
+		#	logging.debug("Setting incorrect tags to B yields improvement from %.4f to %.4f" % (f1, f1_b))
+		#	pre, rec, f1 = pre_b, rec_b, f1_b
+
+		# similar to sklearn.f1_score(average='micro'), excludes token 'O'
+		pre, rec, f1 = BIOF1Validation.compute_f1_token_basis(predLabels, correctLabels, 'O')
 
 		if self.writeOutput:
 			self.writeOutputToFile(sentences, predLabels, '%.4f_%s' % (f1))
