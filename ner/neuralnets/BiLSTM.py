@@ -13,17 +13,23 @@ import time
 import math
 import numpy as np
 import logging
-
 import matplotlib
 
 matplotlib.use('Agg')  # Must be before importing matplotlib.pyplot or pylab!
 import pylab
+import matplotlib.pyplot as plt
+import tensorflow as tf
 import keras
 from keras import backend as K
 from keras.models import Model
 from keras.layers import *
 from keras.optimizers import *
 from keras.utils import *
+from keras.callbacks import TensorBoard
+
+from .logger import Logger
+
+
 # from .keraslayers.ChainCRF import ChainCRF
 import util.BIOF1Validation as BIOF1Validation
 
@@ -33,7 +39,6 @@ else:  # Python 2.7 imports
 	import cPickle as pkl
 
 K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads=4, inter_op_parallelism_threads=4)))
-
 
 class BiLSTM:
 	additionalFeatures = []
@@ -54,6 +59,9 @@ class BiLSTM:
 	resultsOut = None
 	modelSavePath = None
 	maxCharLen = None
+	avgEpochLoss = 0
+	log_path = './logs'
+	logger = Logger(log_path)
 
 	params = {'miniBatchSize': 32, 'dropout': [0.25, 0.25], 'classifier': 'Softmax', 'LSTM-Size': [100],
 			  'optimizer': 'nadam', 'earlyStopping': 5, 'addFeatureDimensions': 10,
@@ -115,6 +123,7 @@ class BiLSTM:
 			batch_loss = self.model.train_on_batch(nnInput, labels)
 			epoch_losses.append(batch_loss)
 		logging.info('average epoch loss: {}'.format(np.mean(epoch_losses)))
+		self.avgEpochLoss = np.mean(epoch_losses)
 
 	def predictLabels(self, sentences, noise=False):
 		if self.model == None:
@@ -417,6 +426,11 @@ class BiLSTM:
 			start_time = time.time()
 			dev_score = self.compute_dev_score(devMatrix)
 
+			# logging
+			self.logger.log_scalar(tag='ce_train', value=self.avgEpochLoss, step=epoch + 1)
+			self.logger.log_scalar(tag='f1_dev', value=dev_score, step=epoch + 1)
+			#self.logger.log_images(tag='weights_jindal', images=[self.plot_noise_dist(dev_score)], step=epoch + 1)
+
 			if dev_score > max_dev_score:
 				no_improvement_since = 0
 				max_dev_score = dev_score
@@ -460,6 +474,7 @@ class BiLSTM:
 		if self.params.get('noise', False):
 			logging.info("creating noise free model for test evaluation")
 			test_score = self.compute_test_score(testMatrix, noise=True)
+			self.logger.log_scalar(tag='f1_test', value=test_score, step=epochs)
 		else:
 			test_score = self.compute_test_score(testMatrix, noise=False)
 

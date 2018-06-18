@@ -45,7 +45,7 @@ def compute_precision_token_basis(guessed_sentences, correct_sentences, O_Label)
 
 
 def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingScheme='BIO'):
-    label_pred = []    
+    label_pred = []
     for sentence in predictions:
         label_pred.append([idx2Label[element] for element in sentence])
         
@@ -54,8 +54,7 @@ def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingS
         label_correct.append([idx2Label[element] for element in sentence])
             
     encodingScheme = encodingScheme.upper()
-    
-    
+
     if encodingScheme == 'IOBES':
         convertIOBEStoBIO(label_pred)
         convertIOBEStoBIO(label_correct)                 
@@ -65,10 +64,7 @@ def compute_f1(predictions, correct, idx2Label, correctBIOErrors='No', encodingS
     elif encodingScheme == 'NER':
         convertNERtoBIO(label_pred)
         convertNERtoBIO(label_correct)
-            
-                    
-    
-          
+
     checkBIOEncoding(label_pred, correctBIOErrors)
 
     prec = compute_precision(label_pred, label_correct)
@@ -129,11 +125,11 @@ def convertIOBEStoBIO(dataset):
 def testEncodings():
     """ Tests BIO, IOB and IOBES encoding """
     
-    goldBIO   = [['O', 'B-PER', 'I-PER', 'O', 'B-PER', 'B-PER', 'I-PER'], ['O', 'B-PER', 'B-LOC', 'I-LOC', 'O', 'B-PER', 'I-PER', 'I-PER'], ['B-LOC', 'I-LOC', 'I-LOC', 'B-PER', 'B-PER', 'I-PER', 'I-PER', 'O', 'B-LOC', 'B-PER']]
+    goldBIO   = [['O', 'B-PER', 'I-PER', 'O', 'B-PER', 'I-PER', 'I-PER'], ['O', 'B-PER', 'B-LOC', 'I-LOC', 'O', 'B-PER', 'I-PER', 'I-PER'], ['B-LOC', 'I-LOC', 'I-LOC', 'B-PER', 'I-PER', 'I-PER', 'I-PER', 'O', 'B-LOC', 'B-PER']]
     
     
     print("--Test IOBES--")
-    goldIOBES = [['O', 'B-PER', 'E-PER', 'O', 'S-PER', 'B-PER', 'E-PER'], ['O', 'S-PER', 'B-LOC', 'E-LOC', 'O', 'B-PER', 'I-PER', 'E-PER'], ['B-LOC', 'I-LOC', 'E-LOC', 'S-PER', 'B-PER', 'I-PER', 'E-PER', 'O', 'S-LOC', 'S-PER']]
+    goldIOBES = [['O', 'B-PER', 'E-PER', 'O', 'B-PER', 'E-PER', 'E-PER'], ['O', 'S-PER', 'B-LOC', 'E-LOC', 'O', 'B-PER', 'I-PER', 'E-PER'], ['B-LOC', 'I-LOC', 'E-LOC', 'B-PER', 'I-PER', 'I-PER', 'E-PER', 'O', 'S-LOC', 'S-PER']]
     convertIOBEStoBIO(goldIOBES)
     
     for sentenceIdx in range(len(goldBIO)):
@@ -141,13 +137,21 @@ def testEncodings():
             assert(goldBIO[sentenceIdx][tokenIdx] == goldIOBES[sentenceIdx][tokenIdx])
             
     print("--Test IOB--")        
-    goldIOB   = [['O', 'I-PER', 'I-PER', 'O', 'I-PER', 'B-PER', 'I-PER'], ['O', 'I-PER', 'I-LOC', 'I-LOC', 'O', 'I-PER', 'I-PER', 'I-PER'], ['I-LOC', 'I-LOC', 'I-LOC', 'I-PER', 'B-PER', 'I-PER', 'I-PER', 'O', 'I-LOC', 'I-PER']]
+    goldIOB   = [['O', 'I-PER', 'I-PER', 'O', 'B-PER', 'I-PER', 'I-PER'], ['O', 'I-PER', 'I-LOC', 'I-LOC', 'O', 'I-PER', 'I-PER', 'I-PER'], ['I-LOC', 'I-LOC', 'I-LOC', 'B-PER', 'I-PER', 'I-PER', 'I-PER', 'O', 'I-LOC', 'I-PER']]
     convertIOBtoBIO(goldIOB)
     
     for sentenceIdx in range(len(goldBIO)):
         for tokenIdx in range(len(goldBIO[sentenceIdx])):
             assert(goldBIO[sentenceIdx][tokenIdx] == goldIOB[sentenceIdx][tokenIdx])
-            
+
+    print("--Test NER--")
+    goldNER = [['O', 'PER', 'PER', 'O', 'PER', 'PER', 'PER'], ['O', 'PER', 'LOC', 'LOC', 'O', 'PER', 'PER', 'PER'], ['LOC', 'LOC', 'LOC', 'PER', 'PER', 'PER', 'PER', 'O', 'LOC', 'PER']]
+    convertNERtoBIO(goldNER)
+
+    for sentenceIdx in range(len(goldBIO)):
+        for tokenIdx in range(len(goldBIO[sentenceIdx])):
+            assert (goldBIO[sentenceIdx][tokenIdx] == goldNER[sentenceIdx][tokenIdx])
+
     print("test encodings completed")
     
 
