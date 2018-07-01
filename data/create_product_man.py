@@ -1,19 +1,46 @@
 import time
 
 from datastores import AvroCollection, Processor
+from concept_extractor import ConceptNet, ConceptExtractor
 
+path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/full.avro'
+opath = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/full2.txt'
+entities = ['product', 'organization']
 
-path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/test.avro'
-opath = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/test.txt'
-
-product = AvroCollection(name='product', mode='man', verbose=True)
+product = AvroCollection(mode='man', verbose=False, entities=entities)
 start = time.time()
 product.parse_text_data(path)
 print('finished parsing text data. {}m elapsed'.format(int((time.time()-start)/60)))
 start = time.time()
 product.parse_annotation_data(path)
 print('finished parsing annotation data. {}m elapsed'.format(int((time.time()-start)/60)))
-processor = Processor(product, entities=['product', 'organization'], verbose=True)
+print('tagged entities (token basis) with pronouns:', product.anno_counts_total)
+print('pronoun matches:', product.pronoun_matches)
+print('pronoun tokens lost:', product.pronoun_tokens_lost)
+print('tagged entities (token basis) without pronouns:', product.anno_counts)
+
+concept_net = ConceptNet(verbose=True)
+
+with open('additional_org.txt') as f:
+	add_surfaces = [x.strip().lower() for x in f.readlines()]
+
+for entity in entities:
+	concepts = ConceptExtractor(collection=product,
+								concept_net=concept_net,
+								entity=entity,
+								verbose=True,
+								additional_surfaces=add_surfaces,
+								top_n_concepts=1000)
+
+	concepts.query_concepts()
+	concepts.query_surfaces()
+	concepts.get_statistics()
+	concepts.write_files()
+
+processor = Processor(product, verbose=False)
 start = time.time()
-processor.create_conll_format(opath)
+processor.annotate_documents()
+processor.write_conll(opath)
+
 print('created conll data. {}m elapsed'.format(int((time.time()-start)/60)))
+print('written entity count (token basis):', processor.anno_counts)
