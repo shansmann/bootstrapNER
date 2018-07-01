@@ -40,10 +40,10 @@ class Collection:
 		self.documents = []
 		self.annotations = []
 
-	def parse_text_data(self):
+	def parse_text_data(self, path):
 		pass
 
-	def parse_annotation_data(self):
+	def parse_annotation_data(self, path):
 		pass
 
 	def clean_annotations(self, verbose=False):
@@ -87,6 +87,12 @@ class Collection:
 
 
 class TextCollection(Collection):
+	def __init__(self, verbose=False, entities=None):
+		self.verbose = verbose
+		self.entities = entities or []
+		self.anno_counts = defaultdict(int)
+		super(Collection, self).__init__()
+
 	def parse_text_data(self, path):
 		docs = []
 		for filename in glob.glob(os.path.join(path, '*.txt')):
@@ -102,9 +108,8 @@ class TextCollection(Collection):
 			doc = Document(base_name, words, sentence_breaks, file_content)
 			docs.append(doc)
 			file.close()
-			if len(docs) % 5 == 0:
+			if len(docs) % 100 == 0:
 				logging.info('finished {} documents.'.format(len(docs)))
-				break
 		self.documents = docs
 
 	def parse_annotation_data(self, path):
@@ -123,13 +128,14 @@ class TextCollection(Collection):
 						keytype, start, _, end = anno_inst1
 					if not keytype.endswith('-of'):
 						surface = anno_inst[2]
-						annotations.append(Token(surface, int(start), int(end), keytype, float(1)))
+						if surface and start and end and keytype and keytype in self.entities:
+							self.anno_counts[keytype] += len(word_tokenize(surface))
+							annotations.append(Token(surface, int(start), int(end), keytype, float(1)))
 			annotated_doc = Document(base_name, annotations)
 			annotated_docs.append(annotated_doc)
 			f_anno.close()
-			if len(annotated_docs) % 5 == 0:
+			if len(annotated_docs) % 100 == 0:
 				logging.info('finished {} documents.'.format(len(annotated_docs)))
-				break
 		self.annotations = annotated_docs
 
 	def _spans(self, txt):
@@ -142,10 +148,14 @@ class TextCollection(Collection):
 
 
 class AvroCollection(Collection):
-	def __init__(self, name, mode, verbose=False):
+	def __init__(self, mode, verbose=False, entities=None):
 		self.mode = mode
 		self.verbose = verbose
+		self.entities = entities or []
+		self.anno_counts_total = defaultdict(int)
 		self.anno_counts = defaultdict(int)
+		self.pronoun_matches = defaultdict(int)
+		self.pronoun_tokens_lost = defaultdict(int)
 		super(Collection, self).__init__()
 
 	def parse_text_data(self, path):
@@ -165,8 +175,6 @@ class AvroCollection(Collection):
 				#TODO: handle LEMMA
 				word = file_content[start:end]
 				if re.search(r"\s", word) or len(word) == 0:
-					#TODO: maybe use offset
-					#offset += len(word)
 					if self.verbose:
 						logging.warning('token: {} contains spaces or is empty, skipping. document id: {}'.format(word, idd))
 					continue
@@ -176,9 +184,8 @@ class AvroCollection(Collection):
 				sentence_breaks.append(end)
 			doc = Document(idd, words, sentence_breaks, file_content)
 			docs.append(doc)
-			if len(docs) % 10 == 0:
+			if len(docs) % 100 == 0:
 				logging.info('finished {} documents.'.format(len(docs)))
-				#print(file_content)
 		reader.close()
 		self.documents = docs
 
@@ -197,82 +204,79 @@ class AvroCollection(Collection):
 				if self.mode == 'auto':
 					concept_meta = token.get('attributes')
 					if concept_meta:
-						entity = concept_meta.get('sprout_ner_tag', None)
+						entity = concept_meta.get('sprout_ner_tag', '').replace('boot_ner_', '')
 						score = concept_meta.get('ms_concept_graph_rep_e_c', None)
-						if word and start and end and entity and score:
-							tok = Token(word, start, end, entity.replace('boot_ner_', ''), float(score))
-							self.anno_counts[entity.replace('boot_ner_', '')] += 1
+						if word and start and end and entity and score and entity in self.entities:
+							tok = Token(word, start, end, entity, float(score))
+							self.anno_counts[entity] += len(word_tokenize(word))
 							annotations.append(tok)
 						elif self.verbose:
 							logging.warning('invalid annotation found in document {}'.format(idd))
 				else:
 					forbidden_pattern = re.compile(r"(company|firm|business|organization|we|our|ours|us|it|its|I|me|my|mine|you|your|yours|they|them|theirs|their|she|her|hers|him|his|he|itself|ourselves|themselves|myself|yourself|yourselves|himself|herself|which|who|whom|whose|whichever|whoever|whomever|those|these|this. + | that. + | this | that)", re.I | re.U)
-					entity = token.get('type')
-					if word and start and end and entity:
+					entity = token.get('type', None)
+					if word and start and end and entity and entity in self.entities:
+						self.anno_counts_total[entity] += len(word_tokenize(word))
 						if forbidden_pattern.match(word):
-							continue
+							self.pronoun_matches[entity] += 1
+							self.pronoun_tokens_lost[entity] += len(word_tokenize(word))
+							if self.verbose:
+								logging.info('pronoun entity found. word: {}, entity: {} - skipping.'.format(word, entity))
 						else:
-							tok = Token(word, start, end, entity, float(1))
+							tok = Token(word, start, end, entity, float(1), entity)
 							annotations.append(tok)
+							self.anno_counts[entity] += len(word_tokenize(word))
 					elif self.verbose:
 						logging.warning('invalid annotation found in document {}'.format(idd))
 
 			annotated_doc = Document(idd, annotations)
 			annotated_docs.append(annotated_doc)
-			if len(annotated_docs) % 10 == 0:
+			if len(annotated_docs) % 100 == 0:
 				logging.info('finished {} documents.'.format(len(annotated_docs)))
-				#[print(x.word, x.start, x.end, x.entity, float(x.score)) for x in annotations]
 		reader.close()
 		self.annotations = annotated_docs
 
 
 class Processor:
-	def __init__(self, Collection, entities=[], verbose=False):
+	def __init__(self, Collection, verbose=False):
 		self.text_collection = Collection.documents
 		self.annotation_collection = Collection.annotations
-		self.entities = entities
-		self.entity_overlaps = 0
-		self.index_errors = 0
 		self.verbose = verbose
 		self.anno_counts = defaultdict(int)
 
 	def _match_tokens(self, token, anno):
-		prefix = ''
-		if anno.entity in self.entities:
-			if token.start >= anno.start and token.end <= anno.end:
-				# check words
-				if token.word in anno.word:
-					# token match
-					if token.score < anno.score:
-						# IOB2 encoding
-						anno_tokens = word_tokenize(anno.word)
-						if len(anno_tokens) > 1:
-							if anno.word.index(token.word) == 0:
-								# first word
-								prefix = 'B-'
-							else:
-								prefix = 'I-'
-						else:
+		prefix = None
+		if token.start >= anno.start and token.end <= anno.end:
+			# check words
+			if token.word in anno.word:
+				# token match
+				if token.score < anno.score:
+					# IOB2 encoding
+					anno_tokens = word_tokenize(anno.word)
+					if len(anno_tokens) >= 1:
+						if anno.word.index(token.word) == 0:
+							# first word
 							prefix = 'B-'
-						return prefix
-					else:
-						# token overlap
-						if self.verbose:
-							logging.warning('token overlap. Word: {}, Previous: {}:{}, Suggestion: {}:{}'.format(token.word,
-																										   token.entity,
-																										   token.score,
-																										   anno.entity,
-																										   anno.score))
-						self.entity_overlaps += 1
-						return prefix
+						else:
+							prefix = 'I-'
+					return prefix
 				else:
-					# token not in annotation, index fail
+					# token overlap
 					if self.verbose:
-						logging.warning('token not in annotation! Word:{} Annotation:{}'.format(token.word,
-																								anno.word))
-					self.index_errors += 1
+						logging.warning('token overlap. Word: {}, Previous: {}:{}, Suggestion: {}:{}'.format(token.word,
+																									   token.entity,
+																									   token.score,
+																									   anno.entity,
+																									   anno.score))
+					self.entity_overlaps += 1
+					self.overlap_tokens_lost[anno.entity] += len(word_tokenize(anno.word))
 					return prefix
 			else:
+				# token not in annotation, index fail
+				if self.verbose:
+					logging.warning('token not in annotation! Word:{} Annotation:{}'.format(token.word,
+																							anno.word))
+				self.index_errors += 1
 				return prefix
 		else:
 			return prefix
@@ -283,20 +287,16 @@ class Processor:
 			for document in self.text_collection:
 				n_docs += 1
 				idd = document.id
+				annotated_doc = [doc for doc in self.annotation_collection if doc.id == idd][0]
 				for token in document.tokens:
 					# check annotated docs
-					for annotated_doc in self.annotation_collection:
-						if annotated_doc.id == idd:
-							# right file
-							for anno in annotated_doc.tokens:
-								# check annotations
-								match = self._match_tokens(token, anno)
-								if match:
-									token.score = anno.score
-									token.entity = match + anno.entity
-									token.plain_entity = anno.entity
-						else:
-							continue
+					for anno in annotated_doc.tokens:
+						# check annotations
+						match = self._match_tokens(token, anno)
+						if match:
+							token.score = anno.score
+							token.entity = match + anno.entity
+							token.plain_entity = anno.entity
 					if (token.start - 1) in (document.sentence_breaks):
 						record_file.write('\n')
 					# fallback token 0
@@ -312,4 +312,57 @@ class Processor:
 						record_file.write(line)
 				record_file.write('\n')
 				if n_docs % 10 == 0:
+					logging.info('finished {} documents.'.format(n_docs))
+
+	def annotate_documents(self):
+		for n_docs, annotated_document in enumerate(self.annotation_collection):
+			doc = [doc for doc in self.text_collection if doc.id == annotated_document.id][0]
+			self._match_annotations(annotated_document.tokens, doc.tokens)
+
+	def _match_annotations(self, anno_tokens, doc_tokens):
+		for anno in anno_tokens:
+			rel_tokens = self._relevant_tokens(anno, doc_tokens)
+			if rel_tokens:
+				for token in rel_tokens:
+					token.score = anno.score
+					token.entity = self._IOB2_encoding(anno, token)
+					token.plain_entity = anno.entity
+			elif self.verbose:
+				logging.info('no taggable tokens found, skipping anno: {}'.format(anno.word))
+
+	def _relevant_tokens(self, anno, doc_tokens):
+		rel_tokens = []
+		for token in doc_tokens:
+			if token.start >= anno.start and token.end <= anno.end:
+				if token.word in anno.word:
+					rel_tokens.append(token)
+		if all(token.score < anno.score for token in rel_tokens):
+			return rel_tokens
+		return None
+
+	def _IOB2_encoding(self, anno, token):
+		if anno.word.index(token.word) == 0:
+			# first word
+			return 'B-' + anno.entity
+		else:
+			return 'I-' + anno.entity
+
+	def write_conll(self, outpath):
+		with open(outpath, 'w') as record_file:
+			for n_docs, document in enumerate(self.text_collection):
+				for token in document.tokens:
+					if (token.start - 1) in (document.sentence_breaks):
+						record_file.write('\n')
+					if token.word == ' ' or token.word == '':
+						continue
+					# write token
+					self.anno_counts[token.plain_entity] += 1
+					line = '{}\t{}\t{}\t{}\t{}\n'.format(token.word,
+														 token.start,
+														 token.end,
+														 token.entity,
+														 token.plain_entity)
+					record_file.write(line)
+				record_file.write('\n')
+				if n_docs % 100 == 0:
 					logging.info('finished {} documents.'.format(n_docs))

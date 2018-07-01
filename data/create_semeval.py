@@ -1,29 +1,36 @@
+import time
+
 from datastores import TextCollection, Processor
+from concept_extractor import ConceptNet, ConceptExtractor
 
+path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_man/full/'
+opath = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_man/full.txt'
+entities = ['Process', 'Material', 'Task']
 
-# train
-train = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval/original/train/'
-otrain = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval/original/train/0_train.txt'
-semeval = TextCollection('semeval')
-semeval.parse_text_data(train)
-semeval.parse_annotation_data(train)
-processor = Processor(semeval)
-processor.create_conll_format(otrain)
+semeval = TextCollection(verbose=False, entities=entities)
+start = time.time()
+semeval.parse_text_data(path)
+print('finished parsing text data. {}m elapsed'.format(int((time.time()-start)/60)))
+start = time.time()
+semeval.parse_annotation_data(path)
+print('finished parsing annotation data. {}m elapsed'.format(int((time.time()-start)/60)))
+print('tagged entities (token basis):', semeval.anno_counts)
 
-# dev
-dev = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval/original/dev/'
-odev = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval/original/dev/0_dev.txt'
-semeval = TextCollection('semeval')
-semeval.parse_text_data(dev)
-semeval.parse_annotation_data(dev)
-processor = Processor(semeval)
-processor.create_conll_format(odev)
+for entity in entities:
+	concepts = ConceptExtractor(collection=semeval,
+								concept_net=ConceptNet(verbose=True),
+								entity=entity,
+								verbose=True,
+								top_n_concepts=1000)
+	concepts.query_concepts()
+	concepts.query_surfaces()
+	concepts.get_statistics()
+	concepts.write_files()
 
-# test
-test = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval/original/test/'
-otest = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval/original/test/0_test.txt'
-semeval = TextCollection('semeval')
-semeval.parse_text_data(test)
-semeval.parse_annotation_data(test)
-processor = Processor(semeval)
-processor.create_conll_format(otest)
+processor = Processor(semeval, verbose=False)
+start = time.time()
+processor.annotate_documents()
+processor.write_conll(opath)
+
+print('created conll data. {}m elapsed'.format(int((time.time()-start)/60)))
+print('written entity count (token basis):', processor.anno_counts)

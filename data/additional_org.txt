@@ -1,0 +1,262 @@
+Activision Blizzard
+Adobe Systems
+Alexion Pharmaceuticals
+Align Technology
+Alphabet Inc.
+Amazon.com
+American Airlines Group
+Amgen
+Analog Devices
+Apple
+Applied Materials
+ASML Holding
+Autodesk
+Automatic Data Processing
+Baidu
+Biogen Idec
+BioMarin Pharmaceutical
+Booking Holdings
+Broadcom Ltd.
+CA Technologies
+Cadence Design Systems
+Celgene
+Cerner Corporation
+Charter Communications
+Check Point
+Cintas Corporation
+Cisco Systems
+Citrix Systems
+Cognizant Technology Solutions
+Comcast
+Costco Wholesale
+CSX Corporation
+Ctrip
+Dentsply Sirona
+Dish Network
+Dollar Tree
+eBay
+Electronic Arts
+Expedia
+Express Scripts
+Facebook
+Fastenal
+Fiserv
+Gilead Sciences
+Google
+Hasbro
+Henry Schein
+Hologic
+Idexx Laboratories
+Illumina
+Incyte
+Intel
+Intuit
+Intuitive Surgical
+J. B. Hunt
+JD.com
+KLA-Tencor
+Lam Research
+Liberty Global
+Marriott International
+Maxim Integrated
+MercadoLibre
+Microchip Technology
+Micron Technology
+Microsoft
+Mondelēz International
+Monster Beverage
+Mylan
+NetEase
+Netflix
+Nvidia
+O’Reilly Auto Parts
+Paccar
+Paychex
+PayPal
+Qualcomm
+Qurate Retail
+Regeneron Pharmaceuticals
+Ross Stores
+Seagate Technology
+Shire plc
+Sirius XM Holdings
+Skyworks Solutions
+Starbucks
+Symantec
+Synopsys
+T-Mobile US
+Take-Two Interactive
+Tesla, Inc.
+Texas Instruments
+The Kraft Heinz Company
+Twenty-First Century Fox
+Ulta Beauty
+Verisk Analytics
+Vertex Pharmaceuticals
+Vodafone Group
+Walgreens Boots Alliance
+Western Digital
+Workday, Inc.
+Wynn Resorts
+Xilinx
+Royal Dutch Shell
+BP
+Total
+Volkswagen
+Glencore Xstrata
+Gazprom
+E.ON
+Eni
+ING
+Daimler
+AXA
+Allianz
+BNP Paribas
+Engie
+Carrefour
+Statoil
+Banco Santander
+Exor
+Fiat
+Siemens
+Assicurazioni Generali
+Lukoil
+Enel
+HSBC
+Crédit Agricole
+Tesco
+BASF
+Société Générale
+BMW
+ArcelorMittal
+Nestlé
+Metro
+Électricité de France
+Munich Re
+Telefónica
+Bosch
+Groupe PSA
+Deutsche Telekom
+Repsol
+Deutsche Post
+Groupe BPCE
+Deutsche Bank
+Vodafone
+Barclays
+ThyssenKrupp
+RWE
+Airbus
+Landesbank Baden-Württemberg
+Lloyds Banking Group
+Rosneft
+Unilever
+Orange
+The Royal Bank of Scotland Group
+Ahold Delhaize
+Aviva
+Auchan
+Rio Tinto Group
+Maersk
+Novartis
+Renault
+Saint-Gobain
+Prudential
+UniCredit
+Nokia
+Zurich Insurance Group
+Deutsche Bahn
+CNP Assurances
+Vinci
+LyondellBasell
+Banco Bilbao Vizcaya Argentaria
+Bayer
+SSE
+Hoffmann-La Roche
+Intesa Sanpaolo
+Groupe Casino
+Sanofi
+Veolia Environnement
+Credit Suisse
+Volvo
+OMV
+UBS
+Bouygues
+SNCF
+Koç Holding
+Aegon
+Iberdrola
+GlaxoSmithKline
+Grupo ACS
+Continental
+Telecom Italia
+Lufthansa
+Vivendi
+Anheuser-Busch InBev
+Franz Haniel & Cie.
+ABB
+Alliance Boots
+Rabobank Group
+Centrica
+Heraeus
+PKN Orlen
+Sainsbury's
+Sberbank
+Philips
+Ericsson
+Sistema
+La Poste
+Christian Dior
+Air France-KLM
+AstraZeneca
+DZ Bank
+Ineos
+Edeka
+Schneider Electric
+BT Group
+Anglo American
+Poste italiane
+Phoenix Pharmahandel
+Coop
+Legal & General
+GasTerra
+SOCAR
+Gas Natural
+Commerzbank
+Mapfre
+Michelin
+BAE Systems
+Adecco
+Dexia
+L'Oréal
+Morrisons
+Swiss Re
+Migros
+Vattenfall
+Alstom
+Accenture
+Groupe Danone
+MOL Group
+EnBW
+KBC Bank
+Surgutneftegas
+Compass Group
+CRH
+Leonardo-Finmeccanica
+Unipol
+British American Tobacco
+Standard Chartered
+Imperial Tobacco
+TUI Travel
+Marquard & Bahls
+SHV Holdings
+Heineken
+Holcim
+Nordea
+Fresenius
+Lafarge
+Randstad Holding
+KfW
+Bertelsmann
+International Airlines Group
+Sodexo
+National Grid
