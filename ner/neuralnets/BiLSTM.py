@@ -26,6 +26,7 @@ from keras.layers import *
 from keras.optimizers import *
 from keras.utils import *
 from keras.callbacks import TensorBoard
+from .keraslayers.LinNoise import ProbabilityConstraint, TraceRegularizer, SGD_lr_mult, NumpyInitializer
 
 from .logger import Logger
 
@@ -46,7 +47,7 @@ class BiLSTM:
 	verboseBuild = True
 
 	model = None
-	noise_free_model = None
+	base_model = None
 	epoch = 0
 	skipOneTokenSentences = True
 	num_classes = 0
@@ -66,11 +67,12 @@ class BiLSTM:
 	params = {'miniBatchSize': 32, 'dropout': [0.25, 0.25], 'classifier': 'Softmax', 'LSTM-Size': [100],
 			  'optimizer': 'nadam', 'earlyStopping': 5, 'addFeatureDimensions': 10,
 			  'charEmbeddings': None, 'charEmbeddingsSize': 30, 'charFilterSize': 30, 'charFilterLength': 3,
-			  'charLSTMSize': 25, 'clipvalue': 0, 'clipnorm': 1, 'noise': False}  # Default params
+			  'charLSTMSize': 25, 'clipvalue': 0, 'clipnorm': 1, 'noise': False, 'noise_dist': False}  # Default params
 
-	def __init__(self, params=None):
+	def __init__(self, params=None, datasetName=None):
 		if params != None:
 			self.params.update(params)
+		self.datasetName = datasetName
 
 		logging.info("BiLSTM model initialized with parameters: %s" % str(self.params))
 
@@ -130,7 +132,7 @@ class BiLSTM:
 			self.buildModel()
 
 		if noise:
-			self.noise_free_model = self.get_jindal_free_model()
+			self.base_model = self.get_base_model()
 			logging.info('noise free model created.')
 
 		predLabels = [None] * len(sentences)
@@ -157,8 +159,8 @@ class BiLSTM:
 				for name in features:
 					inputData[name] = np.asarray(inputData[name])
 
-				if self.noise_free_model and noise:
-					predictions = self.noise_free_model.predict([inputData[name] for name in features], verbose=False)
+				if self.base_model and noise:
+					predictions = self.base_model.predict([inputData[name] for name in features], verbose=False)
 				else:
 					predictions = self.model.predict([inputData[name] for name in features], verbose=False)
 
@@ -338,20 +340,43 @@ class BiLSTM:
 								 name='softmax_output')(bi_lstm_2)
 
 		# jindals noise model
-		if self.params['noise']:
+		if self.params['noise'] == 'dropout':
 			hadamard_jindal = TimeDistributed(Dropout(.1),
 											  name='hadamard_jindal')(output)
 
 			dense_jindal = TimeDistributed(Dense(self.num_classes,
 										   activation='linear',
+										   trainable=True,
 										   use_bias=False,
-										   kernel_initializer='identity',
-										   trainable=True),
+										   kernel_initializer='identity'),
 									 name='dense_jindal',
 									 trainable=True)(hadamard_jindal)
 
 			output = TimeDistributed(Activation('softmax'),
 									 name='softmax_jindal')(dense_jindal)
+
+		if self.params['noise'] == 'trace':
+			output = TimeDistributed(Dense(self.num_classes,
+										   activation='linear',
+										   trainable=True,
+										   use_bias=False,
+										   kernel_constraint=ProbabilityConstraint(),
+										   kernel_regularizer=TraceRegularizer(lamb=.01),
+										   kernel_initializer='identity'),
+									 name='linear_noise')(output)
+
+		if self.params['noise'] == 'fix':
+
+			output = TimeDistributed(Dense(self.num_classes,
+										   activation='linear',
+										   trainable=False,
+										   use_bias=False,
+										   kernel_initializer=NumpyInitializer(self.params['noise_dist']),
+										   ),
+									 name='fixed_noise',
+									 trainable=False)(output)
+
+
 
 		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
 
@@ -383,9 +408,10 @@ class BiLSTM:
 			model.summary()
 			logging.info(model.get_config())
 			logging.debug("Optimizer: %s, %s" % (str(type(opt)), str(opt.get_config())))
-			plot_model(model, to_file='model_with_jindal.png', show_shapes=True, show_layer_names=True)
+			if self.params['noise']:
+				plot_model(model, to_file='model_{}.png'.format(self.params['noise']), show_shapes=True, show_layer_names=True)
 			new_model = Model(inputs=model.inputs, outputs=model.layers[-4].output)
-			plot_model(new_model, to_file='model_wo_jindal.png', show_shapes=True, show_layer_names=True)
+			plot_model(new_model, to_file='basemodel.png', show_shapes=True, show_layer_names=True)
 
 	def storeResults(self, resultsFilepath):
 		if resultsFilepath != None:
@@ -397,8 +423,13 @@ class BiLSTM:
 		else:
 			self.resultsOut = None
 
-	def get_jindal_free_model(self):
-		new_model = Model(inputs=self.model.inputs, outputs=self.model.layers[-4].output)
+	def get_base_model(self):
+		if self.params['noise'] == 'dropout':
+			layers_to_drop = 4
+		else:
+			layers_to_drop = 2
+
+		new_model = Model(inputs=self.model.inputs, outputs=self.model.layers[-layers_to_drop].output)
 		return new_model
 
 	def evaluate(self, epochs):
@@ -485,17 +516,20 @@ class BiLSTM:
 		labels = [0] * self.num_classes
 		for key, value in self.mappings[self.labelKey].items():
 			labels[value] = key
-		layer = self.model.layers[-2].layer
-		name = layer.name
+		if self.params['noise'] == 'dropout':
+			layer = self.model.layers[-2].layer
+		else:
+			layer = self.model.layers[-1].layer
 		weights = layer.get_weights()[0]
+		print(weights)
+		print(self.params['noise_dist'])
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
 		pylab.xticks(np.arange(self.num_classes), labels, rotation=45)
 		pylab.yticks(np.arange(self.num_classes), labels)
 		pylab.colorbar()
-		pylab.title('learned noise - jindal - score: {}'.format(test_score))
-
+		pylab.title('learned noise - {} - {} - score: {}'.format(self.datasetName, self.params['noise'], np.round(test_score, 4)))
 		pylab.tight_layout()
-		pylab.savefig('noise_dist_learned_{}.pdf'.format(test_score))
+		pylab.savefig('noise_{}_{}_{}.pdf'.format(self.datasetName, self.params['noise'], np.round(test_score, 2)))
 
 	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or \

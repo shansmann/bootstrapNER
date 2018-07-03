@@ -4,12 +4,13 @@ from keras.legacy import interfaces
 from keras.regularizers import Regularizer
 from keras.constraints import Constraint
 from keras.optimizers import Optimizer
+from keras.initializers import Initializer
 
 
 class ProbabilityConstraint(Constraint):
     """This class implements the Probability Constraint
 
-    Matrix is first casted nonnegativ
+    Matrix is first casted non-negativ
     after which a unit norm on row level is enforced
     """
 
@@ -27,7 +28,7 @@ class TraceRegularizer(Regularizer):
     """This class implements the Trace regularizer.
 
     # Arguments:
-    	lambda: float >= 0
+        lambda: float >= 0
     """
 
     def __init__(self, lamb):
@@ -62,7 +63,7 @@ class TraceL2Regularizer(Regularizer):
         return {'lambda': float(self.lamb),
                 'l2': float(self.l2)}
 
-
+# taken from https://erikbrorson.github.io/2018/04/30/Adam-with-learning-rate-multipliers/
 class SGD_lr_mult(Optimizer):
     """Stochastic gradient descent optimizer.
 
@@ -142,3 +143,13 @@ class SGD_lr_mult(Optimizer):
                   'multipliers': self.multipliers}
         base_config = super(SGD_lr_mult, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
+
+
+class NumpyInitializer(Initializer):
+    """Initializer base class: all initializers inherit from this class.
+    """
+    def __init__(self, values):
+        self.values = K.variable(values)
+
+    def __call__(self, shape, dtype=None):
+        return self.values
