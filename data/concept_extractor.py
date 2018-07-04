@@ -180,7 +180,8 @@ class ConceptNet:
 
 class ConceptExtractor:
     def __init__(self, collection, concept_net, entity, verbose=False,
-                 gathered_concepts=None, additional_surfaces=None, top_n_concepts=None):
+                 gathered_concepts=None, additional_surfaces=None, top_n_concepts=None,
+                 load_concepts=None):
         self.collection = collection
         self.entity = entity
         self.verbose = verbose
@@ -195,6 +196,7 @@ class ConceptExtractor:
         self.concept_net = concept_net
         self.top_n_concepts= top_n_concepts
         self.used_concepts = None
+        self.load_concepts = load_concepts
 
     def _extract_surfaces(self, collection):
         logging.info('starting surface extraction for entity: {}'.format(self.entity))
@@ -230,13 +232,20 @@ class ConceptExtractor:
 
     def query_surfaces(self):
         # query concepts for surfaces
-        if self.top_n_concepts:
-            concepts = [x[0] for x in Counter(self.gathered_concepts).most_common(self.top_n_concepts)]
-            self.used_concepts = concepts
-            logging.warning(len(concepts))
+        if self.load_concepts:
+            with open(self.load_concepts) as f:
+                content = f.readlines()
+            # you may also want to remove whitespace characters like `\n` at the end of each line
+            content = [x.strip() for x in content]
+            concepts = content
         else:
-            concepts = self.unique_gathered_concepts
-            logging.warning(len(concepts))
+            if self.top_n_concepts:
+                concepts = [x[0] for x in Counter(self.gathered_concepts).most_common(self.top_n_concepts)]
+                self.used_concepts = concepts
+                logging.warning(len(concepts))
+            else:
+                concepts = self.unique_gathered_concepts
+                logging.warning(len(concepts))
         gazetteer = []
         if self.verbose:
             logging.info('starting surface extraction.')
