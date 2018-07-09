@@ -207,7 +207,7 @@ class ConceptExtractor:
                     surfaces.append(annotation.word)
             if self.verbose:
                 if (n_doc + 1) % 100 == 0:
-                    logging.info('finished extracting surfaces from {} documents.'.format(n_doc))
+                    logging.info('finished extracting surfaces from {} documents.'.format(n_doc + 1))
         if self.additional_surfaces:
             surfaces.extend(self.additional_surfaces)
             #surfaces = self.additional_surfaces
@@ -267,7 +267,7 @@ class ConceptExtractor:
             path = 'concepts/concepts_{}.txt'.format(self.entity)
             with open(path, 'w') as ofile:
                 ofile.write('\n'.join(self.gathered_concepts))
-        else:
+        elif self.used_concepts:
             # write file
             path = 'concepts/concepts_{}.txt'.format(self.entity)
             with open(path, 'w') as ofile:

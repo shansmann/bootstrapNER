@@ -19,24 +19,28 @@ print('pronoun matches:', product.pronoun_matches)
 print('pronoun tokens lost:', product.pronoun_tokens_lost)
 print('tagged entities (token basis) without pronouns:', product.anno_counts)
 
-concept_net = ConceptNet(verbose=True)
+#concept_net = ConceptNet(verbose=True)
 
 with open('additional_org.txt') as f:
 	add_surfaces = [x.strip().lower() for x in f.readlines()]
 
+"""
 for entity in entities:
+	#path = 'concepts/concepts_{}_filtered.txt'.format(entities[0])
 	concepts = ConceptExtractor(collection=product,
 								concept_net=concept_net,
-								entity=entity,
+								entity=entities[0],
 								verbose=True,
 								additional_surfaces=add_surfaces,
-								top_n_concepts=1000)
+								top_n_concepts=1000,)
+								#load_concepts=path)
 
 	concepts.query_concepts()
 	concepts.query_surfaces()
 	concepts.get_statistics()
 	concepts.write_files()
-
+	break
+"""
 processor = Processor(product, verbose=False)
 start = time.time()
 processor.annotate_documents()
