@@ -2,3 +2,8 @@
 *
 # Except this file
 !.gitignore
+!.concepts_organization_filtered.txt
+!.concepts_product_filtered.txt
+!.concepts_Material_filtered.txt
+!.concepts_Process_filtered.txt
+!.concepts_Task_filtered.txt

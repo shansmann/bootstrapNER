@@ -16,17 +16,21 @@ semeval.parse_annotation_data(path)
 print('finished parsing annotation data. {}m elapsed'.format(int((time.time()-start)/60)))
 print('tagged entities (token basis):', semeval.anno_counts)
 
+"""
 for entity in entities:
+	#path = 'concepts/concepts_{}_filtered.txt'.format(entities[2])
 	concepts = ConceptExtractor(collection=semeval,
 								concept_net=ConceptNet(verbose=True),
-								entity=entity,
+								entity=entities[2],
 								verbose=True,
-								top_n_concepts=1000)
-	concepts.query_concepts()
-	concepts.query_surfaces()
-	concepts.get_statistics()
-	concepts.write_files()
-
+								top_n_concepts=1000,)
+								#load_concepts=path,)
+	#concepts.query_concepts()
+	#concepts.query_surfaces()
+	#concepts.get_statistics()
+	#concepts.write_files()
+	break
+"""
 processor = Processor(semeval, verbose=False)
 start = time.time()
 processor.annotate_documents()
