@@ -4,11 +4,9 @@ import numpy as np
 import itertools
 from collections import Counter
 
-true = ['O', 'O', 'B-product', 'I-product', 'O', 'O', 'O', 'B-org', 'I-org', 'O']
-pred = ['O', 'O', 'B-product', 'B-product', 'O', 'O', 'O', 'B-org', 'B-org', 'O']
 
-#{'O': 0, 'product': 1, 'organization': 2}
 labels = ['O', 'product', 'organization']
+#labels = ['O', 'process', 'task', 'material']
 
 def read_tagging(path):
 	data = []
@@ -21,6 +19,8 @@ def read_tagging(path):
 				sent = []
 			else:
 				line_stripped = line.split('\t')[-1]
+				if line_stripped != 'O':
+					line_stripped = line_stripped.lower()
 				sent.append(line_stripped)
 	return data
 
@@ -28,7 +28,8 @@ def plot_confusion_matrix(cm, classes,
 						  man, auto,
 						  normalize=False,
 						  title='Confusion matrix',
-						  cmap=plt.cm.Blues):
+						  cmap=plt.cm.Blues,
+						  save=False):
 	"""
 	This function prints and plots the confusion matrix.
 	Normalization can be applied by setting `normalize=True`.
@@ -38,6 +39,9 @@ def plot_confusion_matrix(cm, classes,
 		print("Normalized confusion matrix")
 	else:
 		print('Confusion matrix, without normalization')
+
+	if save and normalize:
+		np.savetxt('weights_sem.txt', cm)
 
 	print(cm)
 
@@ -58,7 +62,7 @@ def plot_confusion_matrix(cm, classes,
 	plt.tight_layout()
 	plt.ylabel('Manual')
 	plt.xlabel('Automatic')
-	plt.savefig('confusion_matrix_man_auto.pdf')
+	plt.savefig('confusion_matrix_dist_product_norm.pdf')
 	plt.show()
 
 def plot_histo(y, labels, name):
@@ -111,8 +115,11 @@ def compute_f1_token_basis(predictions, correct, O_Label):
 	return prec, rec, f1
 
 
-man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/full.txt'
-auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/full.txt'
+man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/train.txt'
+auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/train.txt'
+
+#man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_man/train.txt'
+#auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_auto/train.txt'
 
 pred = read_tagging(auto_path)
 test = read_tagging(man_path)
@@ -124,11 +131,11 @@ print(Counter(flat_pred))
 print(Counter(flat_test))
 
 C = confusion_matrix(flat_test, flat_pred, labels=labels)
-plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=False, title='Confusion matrix: Man- vs. Auto-Labels - token basis')
+plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=True, title='Confusion matrix: Man- vs. Auto-Labels - token basis', save=False)
 
-print(f1_score(flat_test, flat_pred, average='micro', labels=['product', 'organization']))
+print(f1_score(flat_test, flat_pred, average='micro', labels=labels))
 print(compute_f1_token_basis(pred, test, 'O'))
 
-plot_histo(flat_test, ['product', 'organization'], 'man')
-plot_histo(flat_pred, ['product', 'organization'], 'auto')
+#plot_histo(flat_test, ['product', 'organization'], 'man')
+#plot_histo(flat_pred, ['product', 'organization'], 'auto')
 

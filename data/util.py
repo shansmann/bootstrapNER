@@ -1,4 +1,3 @@
-import xmltodict
 from os.path import basename
 import glob
 
@@ -24,8 +23,26 @@ def parse_all_xml(folder, out_path):
 	for file in folder:
 		xml_text_to_plain(file, out_path)
 
+def read_files():
+	import glob
+	import os
+	ids = []
+	files = glob.glob("science_corpus/*.txt")
+	for f in files:
+		idx = os.path.basename(f).split('.')[0]
+		ids.append(idx)
+	return ids
+
+def write_files(ids):
+	for entry in ids:
+		name = 'science_corpus/' + entry + '.xml'
+		#print('writing file: {}'.format(name))
+		with open(name, 'w') as the_file:
+			pass
 
 if __name__ == '__main__':
-	folder = 'uber_vico/original/'
-	out_path = 'uber_vico/original/texts/'
-	parse_all_xml(folder, out_path)
+	#folder = 'uber_vico/original/'
+	#out_path = 'uber_vico/original/texts/'
+	#parse_all_xml(folder, out_path)
+	ids = read_files()
+	write_files(ids)

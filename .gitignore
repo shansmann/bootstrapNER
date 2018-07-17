@@ -6,6 +6,7 @@
 /data/*/*.gaz
 /data/*/*/*.xml
 /data/*/*/*.txt
+/bash_scripts
 data/__pycache__/
 __pychache__
 /ner/jindal/*.npy
