@@ -4,6 +4,7 @@ import logging
 import sys
 import neuralnets.BiLSTM
 import util.preprocessing
+import numpy as np
 
 
 # :: Change into the working dir of the script ::
@@ -30,10 +31,16 @@ logger.addHandler(ch)
 
 # :: Train / Dev / Test-Files ::
 datasetName = 'conll'
-dataColumns = {0:'tokens', 3:'NER_BIO'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
-labelKey = 'NER_BIO'
+dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
+labelKey = 'NER'
 
 embeddingsPath = 'glove.840B.300d.txt' #glove word embeddings
+
+
+matrix = np.identity(5, 'float32')
+
+rnd_matrix = np.random.rand(5,5)
+rnd_matrix = rnd_matrix/rnd_matrix.sum(axis=1)[:,None]
 
 #Parameters of the network
 params = {'dropout': [0.25, 0.25],
@@ -42,9 +49,11 @@ params = {'dropout': [0.25, 0.25],
           'optimizer': 'nadam',
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 32,
-          'noise': True}
+          'noise': 'fix',
+		  'noise_dist': rnd_matrix,
+		  'pretraining': True}
 
-frequencyThresholdUnknownTokens = 1000 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
+frequencyThresholdUnknownTokens = 5  # If a token that is not in the pre-trained embeddings file appears at least x times in the train.txt, a new embedding is generated for this word
 training_embeddings_only = False
 
 datasetFiles = [
@@ -64,14 +73,16 @@ pickleFile = util.preprocessing.perpareDataset(embeddingsPath, datasetFiles, fre
 embeddings, word2Idx, datasets = util.preprocessing.loadDatasetPickle(pickleFile)
 data = datasets[datasetName]
 
-logging.info("Dataset: {}".format(datasetName))
-logging.info(data['mappings'].keys())
-logging.info(data['mappings'][labelKey])
+print("Dataset:", datasetName)
+print(data['mappings'].keys())
+print("Label key: ", labelKey)
 
-model = neuralnets.BiLSTM.BiLSTM(params)
+model = neuralnets.BiLSTM.BiLSTM(params, datasetName)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
-model.buildModel()
-#model.modelSavePath = "models/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
-model.evaluate(5)
+#model.buildModel()
+model.create_base_model()
+model.prepare_model_for_evaluation()
+model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey, params['noise']) #Enable this line to save the model to the disk
+model.evaluate(1)

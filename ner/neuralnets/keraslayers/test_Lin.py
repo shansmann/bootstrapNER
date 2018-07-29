@@ -29,14 +29,15 @@ model.add(Dense(3,
                 kernel_constraint=ProbabilityConstraint(),
                 kernel_regularizer=TraceRegularizer(lamb=.01),
                 kernel_initializer='identity',
-                name='layer_5'))
+                name='layer_5',
+                use_bias=False))
 
 learning_rate_multipliers = {}
 learning_rate_multipliers['layer_1'] = 1
 learning_rate_multipliers['layer_2'] = 1
 learning_rate_multipliers['layer_3'] = 1
 learning_rate_multipliers['layer_4'] = 1
-learning_rate_multipliers['layer_5'] = 1
+learning_rate_multipliers['layer_5'] = 10
 
 sgd_with_lr_multipliers = SGD_lr_mult(multipliers=learning_rate_multipliers, debug_verbose=True)
 

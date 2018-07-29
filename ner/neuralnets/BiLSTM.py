@@ -26,6 +26,7 @@ from keras.layers import *
 from keras.optimizers import *
 from keras.utils import *
 from keras.callbacks import TensorBoard
+from .keraslayers.LinNoise import ProbabilityConstraint, TraceRegularizer, SGD_lr_mult, NumpyInitializer
 
 from .logger import Logger
 
@@ -46,7 +47,8 @@ class BiLSTM:
 	verboseBuild = True
 
 	model = None
-	noise_free_model = None
+	base_model = None
+	base_model_after_train = None
 	epoch = 0
 	skipOneTokenSentences = True
 	num_classes = 0
@@ -66,11 +68,13 @@ class BiLSTM:
 	params = {'miniBatchSize': 32, 'dropout': [0.25, 0.25], 'classifier': 'Softmax', 'LSTM-Size': [100],
 			  'optimizer': 'nadam', 'earlyStopping': 5, 'addFeatureDimensions': 10,
 			  'charEmbeddings': None, 'charEmbeddingsSize': 30, 'charFilterSize': 30, 'charFilterLength': 3,
-			  'charLSTMSize': 25, 'clipvalue': 0, 'clipnorm': 1, 'noise': False}  # Default params
+			  'charLSTMSize': 25, 'clipvalue': 0, 'clipnorm': 1, 'noise': False, 'noise_dist': False,
+			  'pretraining': False}  # Default params
 
-	def __init__(self, params=None):
+	def __init__(self, params=None, datasetName=None):
 		if params != None:
 			self.params.update(params)
+		self.datasetName = datasetName
 
 		logging.info("BiLSTM model initialized with parameters: %s" % str(self.params))
 
@@ -104,15 +108,237 @@ class BiLSTM:
 
 		self.maxCharLen = maxCharLen
 
+	def create_base_model(self):
+		""" creates basemodel
+
+		:return: model which has to be compiled
+		"""
+
+		params = self.params
+
+		if self.params['charEmbeddings'] not in [None, "None", "none", False, "False", "false"]:
+			self.padCharacters()
+
+		embeddings = self.embeddings
+		casing2Idx = self.dataset['mappings']['casing']
+
+		caseMatrix = np.identity(len(casing2Idx), dtype='float32')
+
+		token_input = Input(shape=(None,),
+							name='token_input')
+
+		token_embedding = Embedding(input_dim=embeddings.shape[0],
+									output_dim=embeddings.shape[1],
+									weights=[embeddings],
+									trainable=False,
+									name='token_embedding')(token_input)
+
+		casing_input = Input(shape=(None,),
+							 name='casing_input')
+
+		casing_embedding = Embedding(input_dim=caseMatrix.shape[0],
+									 output_dim=caseMatrix.shape[1],
+									 weights=[caseMatrix],
+									 trainable=False,
+									 name='casing_emd')(casing_input)
+
+		concat_layers = [token_embedding, casing_embedding]
+		# :: Character Embeddings ::
+		if params['charEmbeddings'] not in [None, "None", "none", False, "False", "false"]:
+			charset = self.dataset['mappings']['characters']
+			charEmbeddingsSize = params['charEmbeddingsSize']
+			maxCharLen = self.maxCharLen
+			charEmbeddings = []
+			for _ in charset:
+				limit = math.sqrt(3.0 / charEmbeddingsSize)
+				vector = np.random.uniform(-limit, limit, charEmbeddingsSize)
+				charEmbeddings.append(vector)
+
+			charEmbeddings[0] = np.zeros(charEmbeddingsSize)  # Zero padding
+			charEmbeddings = np.asarray(charEmbeddings)
+
+			character_input = Input(shape=(None, maxCharLen),
+									name='character_input')
+			character_embedding = TimeDistributed(Embedding(input_dim=charEmbeddings.shape[0],
+															output_dim=charEmbeddings.shape[1],
+															weights=[charEmbeddings],
+															trainable=True,
+															mask_zero=True),
+												  input_shape=(None, maxCharLen),
+												  name='char_emd')(character_input)
+
+			charLSTMSize = params['charLSTMSize']
+			character_lstm = TimeDistributed(Bidirectional(LSTM(charLSTMSize,
+																return_sequences=False)),
+											 name="char_lstm")(character_embedding)
+
+			if self.additionalFeatures == None:
+				self.additionalFeatures = []
+
+			self.additionalFeatures.append('characters')
+			concat_layers.append(character_lstm)
+
+		merged = keras.layers.concatenate(concat_layers,
+										  name='concat_layer')
+
+		bi_lstm_1 = Bidirectional(LSTM(params['LSTM-Size'][0],
+									   return_sequences=True,
+									   dropout=params['dropout'][0],
+									   recurrent_dropout=params['dropout'][1]),
+								  name="BiLSTM_1")(merged)
+
+		bi_lstm_2 = Bidirectional(LSTM(params['LSTM-Size'][1],
+									   return_sequences=True,
+									   dropout=params['dropout'][0],
+									   recurrent_dropout=params['dropout'][1]),
+								  name="BiLSTM_2")(bi_lstm_1)
+
+		self.num_classes = len(self.dataset['mappings'][self.labelKey])
+
+		output = TimeDistributed(Dense(self.num_classes,
+									   activation='softmax'),
+								 name='softmax_output')(bi_lstm_2)
+
+		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
+		if self.verboseBuild:
+			plot_model(model, to_file='basemodel.png', show_shapes=True, show_layer_names=True)
+		self.base_model = model
+
+	def prepare_model_for_evaluation(self):
+		"""
+
+		:return:
+		"""
+		if not self.params['noise']:
+			self.compile_model()
+
+		if self.params['pretraining']:
+			self.add_identity_layer()
+			self.compile_model()
+			self.evaluate(1, pretraining=True)
+			#layer = self.model.layers[-1].layer
+			#assert layer.get_weights()[0] == np.identity(self.num_classes)
+			self.epoch = 0
+			self.remove_identity_layer()
+			self.add_noise_mitigation()
+			self.compile_model()
+		else:
+			self.add_noise_mitigation()
+			self.compile_model()
+
+		if self.verboseBuild:
+			self.model.summary()
+			logging.info(self.model.get_config())
+
+	def add_noise_mitigation(self):
+		model = self.base_model
+		output_old = model.layers[-1].output
+
+		# dropout model
+		if self.params['noise'] == 'dropout':
+			hadamard_jindal = TimeDistributed(Dropout(.1),
+											  name='hadamard_jindal')(output_old)
+
+			dense_jindal = TimeDistributed(Dense(self.num_classes,
+												 activation='linear',
+												 trainable=True,
+												 use_bias=False,
+												 kernel_initializer='identity'),
+										   name='dense_jindal',
+										   trainable=True)(hadamard_jindal)
+
+			output = TimeDistributed(Activation('softmax'),
+									 name='softmax_jindal')(dense_jindal)
+		# trace model
+		if self.params['noise'] == 'trace':
+			output = TimeDistributed(Dense(self.num_classes,
+										   activation='linear',
+										   trainable=True,
+										   use_bias=False,
+										   kernel_constraint=ProbabilityConstraint(),
+										   kernel_regularizer=TraceRegularizer(lamb=.01),
+										   kernel_initializer='identity'),
+									 name='linear_noise')(output_old)
+
+		# fix noise model
+		if self.params['noise'] == 'fix':
+			output = TimeDistributed(Dense(self.num_classes,
+										   activation='linear',
+										   trainable=False,
+										   use_bias=False,
+										   kernel_initializer=NumpyInitializer(self.params['noise_dist'])),
+									 name='fixed_noise',
+									 trainable=False)(output_old)
+
+		new_model = Model(inputs=model.inputs, outputs=output)
+		if self.verboseBuild:
+			plot_model(new_model, to_file='model_{}.png'.format(self.params['noise']), show_shapes=True,
+					   show_layer_names=True)
+		self.base_model = new_model
+
+	def add_identity_layer(self):
+		model = self.base_model
+		output_old = model.layers[-1].output
+		output = TimeDistributed(Dense(self.num_classes,
+									   activation='linear',
+									   trainable=False,
+									   use_bias=False,
+									   kernel_initializer='identity'),
+								 name='fixed_noise',
+								 trainable=False)(output_old)
+		new_model = Model(input=model.input, output=output)
+		self.base_model = new_model
+
+	def remove_identity_layer(self):
+		"""
+
+		:return:
+		"""
+		model = self.model
+		new_model = Model(input=model.input, output=model.layers[-2].output)
+		self.base_model = new_model
+
+	def compile_model(self):
+		""" prepares model for training
+
+		:return: compiled model in self.model
+		"""
+		params = self.params
+		model = self.base_model
+
+		optimizerParams = {}
+		if 'clipnorm' in self.params and self.params['clipnorm'] != None and self.params['clipnorm'] > 0:
+			optimizerParams['clipnorm'] = self.params['clipnorm']
+
+		if 'clipvalue' in self.params and self.params['clipvalue'] != None and self.params['clipvalue'] > 0:
+			optimizerParams['clipvalue'] = self.params['clipvalue']
+
+		if params['optimizer'].lower() == 'adam':
+			opt = Adam(**optimizerParams)
+		elif params['optimizer'].lower() == 'nadam':
+			opt = Nadam(**optimizerParams)
+		elif params['optimizer'].lower() == 'rmsprop':
+			opt = RMSprop(**optimizerParams)
+		elif params['optimizer'].lower() == 'adadelta':
+			opt = Adadelta(**optimizerParams)
+		elif params['optimizer'].lower() == 'adagrad':
+			opt = Adagrad(**optimizerParams)
+		elif params['optimizer'].lower() == 'sgd':
+			opt = SGD(lr=0.1, **optimizerParams)
+
+		model.compile(loss='sparse_categorical_crossentropy',
+					  optimizer=opt)
+		self.model = model
+
 	def trainModel(self):
-		if self.model == None:
-			self.buildModel()
+		#if self.model == None:
+		#	self.buildModel()
 
 		trainMatrix = self.dataset['trainMatrix']
-		self.epoch += 1
+		#self.epoch += 1
 
-		if self.params['optimizer'] in self.learning_rate_updates and self.epoch in self.learning_rate_updates[self.params['optimizer']]:
-			K.set_value(self.model.optimizer.lr, self.learning_rate_updates[self.params['optimizer']][self.epoch])
+		if self.params['optimizer'] in self.learning_rate_updates and self.epoch + 1 in self.learning_rate_updates[self.params['optimizer']]:
+			K.set_value(self.model.optimizer.lr, self.learning_rate_updates[self.params['optimizer']][self.epoch + 1])
 			logging.info("Update Learning Rate to %f" % (K.get_value(self.model.optimizer.lr)))
 
 		iterator = self.online_iterate_dataset(trainMatrix, self.labelKey) if self.params['miniBatchSize'] == 1 else self.batch_iterate_dataset(trainMatrix, self.labelKey)
@@ -126,11 +352,11 @@ class BiLSTM:
 		self.avgEpochLoss = np.mean(epoch_losses)
 
 	def predictLabels(self, sentences, noise=False):
-		if self.model == None:
-			self.buildModel()
+		#if self.model == None:
+		#	self.buildModel()
 
 		if noise:
-			self.noise_free_model = self.get_jindal_free_model()
+			self.base_model_after_train = self.get_base_model()
 			logging.info('noise free model created.')
 
 		predLabels = [None] * len(sentences)
@@ -157,8 +383,8 @@ class BiLSTM:
 				for name in features:
 					inputData[name] = np.asarray(inputData[name])
 
-				if self.noise_free_model and noise:
-					predictions = self.noise_free_model.predict([inputData[name] for name in features], verbose=False)
+				if self.base_model_after_train and noise:
+					predictions = self.base_model_after_train.predict([inputData[name] for name in features], verbose=False)
 				else:
 					predictions = self.model.predict([inputData[name] for name in features], verbose=False)
 
@@ -251,142 +477,6 @@ class BiLSTM:
 
 			assert (numTrainExamples == sentenceCount)  # Check that no sentence was missed
 
-	def buildModel(self):
-		params = self.params
-
-		if self.params['charEmbeddings'] not in [None, "None", "none", False, "False", "false"]:
-			self.padCharacters()
-
-		embeddings = self.embeddings
-		casing2Idx = self.dataset['mappings']['casing']
-
-		caseMatrix = np.identity(len(casing2Idx), dtype='float32')
-
-		token_input = Input(shape=(None,),
-							name='token_input')
-
-		token_embedding = Embedding(input_dim=embeddings.shape[0],
-									output_dim=embeddings.shape[1],
-									weights=[embeddings],
-									trainable=False,
-									name='token_embedding')(token_input)
-
-		casing_input = Input(shape=(None,),
-							 name='casing_input')
-
-		casing_embedding = Embedding(input_dim=caseMatrix.shape[0],
-									 output_dim=caseMatrix.shape[1],
-									 weights=[caseMatrix],
-									 trainable=False,
-									 name='casing_emd')(casing_input)
-
-		concat_layers = [token_embedding, casing_embedding]
-		# :: Character Embeddings ::
-		if params['charEmbeddings'] not in [None, "None", "none", False, "False", "false"]:
-			charset = self.dataset['mappings']['characters']
-			charEmbeddingsSize = params['charEmbeddingsSize']
-			maxCharLen = self.maxCharLen
-			charEmbeddings = []
-			for _ in charset:
-				limit = math.sqrt(3.0 / charEmbeddingsSize)
-				vector = np.random.uniform(-limit, limit, charEmbeddingsSize)
-				charEmbeddings.append(vector)
-
-			charEmbeddings[0] = np.zeros(charEmbeddingsSize)  # Zero padding
-			charEmbeddings = np.asarray(charEmbeddings)
-
-			character_input = Input(shape=(None, maxCharLen),
-									name='character_input')
-			character_embedding = TimeDistributed(Embedding(input_dim=charEmbeddings.shape[0],
-															output_dim=charEmbeddings.shape[1],
-															weights=[charEmbeddings],
-															trainable=True,
-															mask_zero=True),
-												  input_shape=(None, maxCharLen),
-												  name='char_emd')(character_input)
-
-			charLSTMSize = params['charLSTMSize']
-			character_lstm = TimeDistributed(Bidirectional(LSTM(charLSTMSize,
-																return_sequences=False)),
-											 name="char_lstm")(character_embedding)
-
-			if self.additionalFeatures == None:
-				self.additionalFeatures = []
-
-			self.additionalFeatures.append('characters')
-			concat_layers.append(character_lstm)
-
-		merged = keras.layers.concatenate(concat_layers,
-										  name='concat_layer')
-
-		bi_lstm_1 = Bidirectional(LSTM(params['LSTM-Size'][0],
-									   return_sequences=True,
-									   dropout=params['dropout'][0],
-									   recurrent_dropout=params['dropout'][1]),
-								  name="BiLSTM_1")(merged)
-
-		bi_lstm_2 = Bidirectional(LSTM(params['LSTM-Size'][1],
-									   return_sequences=True,
-									   dropout=params['dropout'][0],
-									   recurrent_dropout=params['dropout'][1]),
-								  name="BiLSTM_2")(bi_lstm_1)
-
-		self.num_classes = len(self.dataset['mappings'][self.labelKey])
-
-		output = TimeDistributed(Dense(self.num_classes,
-									   activation='softmax'),
-								 name='softmax_output')(bi_lstm_2)
-
-		# jindals noise model
-		if self.params['noise']:
-			hadamard_jindal = TimeDistributed(Dropout(.1),
-											  name='hadamard_jindal')(output)
-
-			dense_jindal = TimeDistributed(Dense(self.num_classes,
-										   activation='linear',
-										   use_bias=False,
-										   kernel_initializer='identity',
-										   trainable=True),
-									 name='dense_jindal',
-									 trainable=True)(hadamard_jindal)
-
-			output = TimeDistributed(Activation('softmax'),
-									 name='softmax_jindal')(dense_jindal)
-
-		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
-
-		optimizerParams = {}
-		if 'clipnorm' in self.params and self.params['clipnorm'] != None and self.params['clipnorm'] > 0:
-			optimizerParams['clipnorm'] = self.params['clipnorm']
-
-		if 'clipvalue' in self.params and self.params['clipvalue'] != None and self.params['clipvalue'] > 0:
-			optimizerParams['clipvalue'] = self.params['clipvalue']
-
-		if params['optimizer'].lower() == 'adam':
-			opt = Adam(**optimizerParams)
-		elif params['optimizer'].lower() == 'nadam':
-			opt = Nadam(**optimizerParams)
-		elif params['optimizer'].lower() == 'rmsprop':
-			opt = RMSprop(**optimizerParams)
-		elif params['optimizer'].lower() == 'adadelta':
-			opt = Adadelta(**optimizerParams)
-		elif params['optimizer'].lower() == 'adagrad':
-			opt = Adagrad(**optimizerParams)
-		elif params['optimizer'].lower() == 'sgd':
-			opt = SGD(lr=0.1, **optimizerParams)
-
-		model.compile(loss='sparse_categorical_crossentropy',
-					  optimizer=opt)
-		self.model = model
-
-		if self.verboseBuild:
-			model.summary()
-			logging.info(model.get_config())
-			logging.debug("Optimizer: %s, %s" % (str(type(opt)), str(opt.get_config())))
-			plot_model(model, to_file='model_with_jindal.png', show_shapes=True, show_layer_names=True)
-			new_model = Model(inputs=model.inputs, outputs=model.layers[-4].output)
-			plot_model(new_model, to_file='model_wo_jindal.png', show_shapes=True, show_layer_names=True)
-
 	def storeResults(self, resultsFilepath):
 		if resultsFilepath != None:
 			directory = os.path.dirname(resultsFilepath)
@@ -397,11 +487,19 @@ class BiLSTM:
 		else:
 			self.resultsOut = None
 
-	def get_jindal_free_model(self):
-		new_model = Model(inputs=self.model.inputs, outputs=self.model.layers[-4].output)
+	def get_base_model(self):
+		if self.params['noise'] == 'dropout':
+			layers_to_drop = 4
+		else:
+			layers_to_drop = 2
+
+		new_model = Model(inputs=self.model.inputs, outputs=self.model.layers[-layers_to_drop].output)
 		return new_model
 
-	def evaluate(self, epochs):
+	def evaluate(self, epochs, pretraining=False):
+		if pretraining:
+			logging.info('starting pretraining of base model with identity ')
+
 		logging.info("%d train sentences" % len(self.dataset['trainMatrix']))
 		logging.info("%d dev sentences" % len(self.dataset['devMatrix']))
 		logging.info("%d test sentences" % len(self.dataset['testMatrix']))
@@ -415,10 +513,14 @@ class BiLSTM:
 
 		for epoch in range(epochs):
 			sys.stdout.flush()
-			logging.info("--------- Epoch %d -----------" % (epoch + 1))
+			if not pretraining:
+				logging.info("--------- Epoch %d -----------" % (epoch + 1))
+			else:
+				logging.info("---- Pretraining Epoch %d ----" % (epoch + 1))
 
 			start_time = time.time()
 			self.trainModel()
+			self.epoch += 1
 			time_diff = time.time() - start_time
 			total_train_time += time_diff
 			logging.info("%.2f sec for training (%.2f total)" % (time_diff, total_train_time))
@@ -427,15 +529,16 @@ class BiLSTM:
 			dev_score = self.compute_dev_score(devMatrix)
 
 			# logging
-			self.logger.log_scalar(tag='ce_train', value=self.avgEpochLoss, step=epoch + 1)
-			self.logger.log_scalar(tag='f1_dev', value=dev_score, step=epoch + 1)
+			if not pretraining:
+				self.logger.log_scalar(tag='ce_train', value=self.avgEpochLoss, step=epoch + 1)
+				self.logger.log_scalar(tag='f1_dev', value=dev_score, step=epoch + 1)
 			#self.logger.log_images(tag='weights_jindal', images=[self.plot_noise_dist(dev_score)], step=epoch + 1)
 
 			if dev_score > max_dev_score:
 				no_improvement_since = 0
 				max_dev_score = dev_score
 
-				if self.modelSavePath != None:
+				if self.modelSavePath != None and not pretraining:
 					savePath = self.modelSavePath.replace("[DevScore]", "%.4f" % dev_score).replace("[Epoch]",
 																									str(epoch))
 
@@ -465,37 +568,41 @@ class BiLSTM:
 			logging.info("Max: %.4f on dev" % (max_dev_score))
 			logging.info("%.2f sec for evaluation" % (time.time() - start_time))
 
-			if self.params['earlyStopping'] > 0 and no_improvement_since >= self.params['earlyStopping']:
+			if self.params['earlyStopping'] > 0 and no_improvement_since >= self.params['earlyStopping'] and not pretraining:
 				logging.info("!!! Early stopping, no improvement after " + str(no_improvement_since) + " epochs !!!")
 				break
 
-		logging.info("--------- Evaluation on test data ---------")
-		# TODO: calculate noise free model score on test data
-		if self.params.get('noise', False):
-			logging.info("creating noise free model for test evaluation")
-			test_score = self.compute_test_score(testMatrix, noise=True)
-			self.logger.log_scalar(tag='f1_test', value=test_score, step=epochs)
-		else:
-			test_score = self.compute_test_score(testMatrix, noise=False)
+		if not pretraining:
+			logging.info("--------- Evaluation on test data ---------")
+			# TODO: calculate noise free model score on test data
+			if self.params.get('noise', False):
+				logging.info("creating noise free model for test evaluation")
+				test_score = self.compute_test_score(testMatrix, noise=True)
+				self.logger.log_scalar(tag='f1_test', value=test_score, step=epochs)
+			else:
+				test_score = self.compute_test_score(testMatrix, noise=False)
 
-		if self.verboseBuild and self.params["noise"]:
-			self.plot_noise_dist(test_score)
+			if self.verboseBuild and self.params["noise"]:
+				self.plot_noise_dist(test_score)
 
 	def plot_noise_dist(self, test_score):
 		labels = [0] * self.num_classes
 		for key, value in self.mappings[self.labelKey].items():
 			labels[value] = key
-		layer = self.model.layers[-2].layer
-		name = layer.name
+		if self.params['noise'] == 'dropout':
+			layer = self.model.layers[-2].layer
+		else:
+			layer = self.model.layers[-1].layer
 		weights = layer.get_weights()[0]
+		print(weights)
+		print(self.params['noise_dist'])
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
 		pylab.xticks(np.arange(self.num_classes), labels, rotation=45)
 		pylab.yticks(np.arange(self.num_classes), labels)
 		pylab.colorbar()
-		pylab.title('learned noise - jindal - score: {}'.format(test_score))
-
+		pylab.title('learned noise - {} - {} - score: {}'.format(self.datasetName, self.params['noise'], np.round(test_score, 4)))
 		pylab.tight_layout()
-		pylab.savefig('noise_dist_learned_{}.pdf'.format(test_score))
+		pylab.savefig('noise_{}_{}_{}.pdf'.format(self.datasetName, self.params['noise'], np.round(test_score, 2)))
 
 	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or \
