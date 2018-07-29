@@ -215,7 +215,7 @@ class BiLSTM:
 		if self.params['pretraining']:
 			self.add_identity_layer()
 			self.compile_model()
-			self.evaluate(1, pretraining=True)
+			self.evaluate(5, pretraining=True)
 			#layer = self.model.layers[-1].layer
 			#assert layer.get_weights()[0] == np.identity(self.num_classes)
 			self.epoch = 0
