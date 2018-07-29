@@ -29,7 +29,7 @@ logger.addHandler(ch)
 ######################################################
 
 # :: Train / Dev / Test-Files ::
-datasetName = 'semeval'
+datasetName = 'product_corpus_man'
 dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
 labelKey = 'NER'
 
@@ -44,7 +44,7 @@ params = {'dropout': [0.25, 0.25],
           'miniBatchSize': 32,
           'noise': False}
 
-frequencyThresholdUnknownTokens = 1000 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
+frequencyThresholdUnknownTokens = 5 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
 
 datasetFiles = [
@@ -66,12 +66,13 @@ data = datasets[datasetName]
 
 print("Dataset:", datasetName)
 print(data['mappings'].keys())
-print(data['mappings'][labelKey])
+print("Label key: ", labelKey)
 
 model = neuralnets.BiLSTM.BiLSTM(params)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
+#model.buildModel()
 model.create_base_model()
 model.prepare_model_for_evaluation()
 model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey, params['noise']) #Enable this line to save the model to the disk

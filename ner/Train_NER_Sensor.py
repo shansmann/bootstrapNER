@@ -42,7 +42,7 @@ params = {'dropout': [0.25, 0.25],
           'optimizer': 'nadam',
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 128,
-          'noise': True}
+          'noise': 'trace'}
 
 frequencyThresholdUnknownTokens = 5 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
@@ -64,14 +64,17 @@ pickleFile = util.preprocessing.perpareDataset(embeddingsPath, datasetFiles, fre
 embeddings, word2Idx, datasets = util.preprocessing.loadDatasetPickle(pickleFile)
 data = datasets[datasetName]
 
-logging.info("Dataset: {}".format(datasetName))
-logging.info(data['mappings'].keys())
-logging.info(data['mappings'][labelKey])
+print("Dataset:", datasetName)
+print(data['mappings'].keys())
+print("Label key: ", labelKey)
+print("label mappings: {}".format(data['mappings'][labelKey]))
+
 
 model = neuralnets.BiLSTM.BiLSTM(params)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
-model.buildModel()
-model.modelSavePath = "models/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey) #Enable this line to save the model to the disk
-model.evaluate(1)
+model.create_base_model()
+model.prepare_model_for_evaluation()
+model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey, params['noise']) #Enable this line to save the model to the disk
+model.evaluate(20)
