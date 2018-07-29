@@ -3,8 +3,8 @@ import time
 from datastores import AvroCollection, Processor
 
 
-path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/sensor_corpus/2.avro'
-opath = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/sensor_corpus/train2.txt'
+path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/sensor_corpus/test.avro'
+opath = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/sensor_corpus/test.txt'
 entities = ['product', 'organization']
 
 product = AvroCollection(mode='auto', verbose=False, entities=entities)

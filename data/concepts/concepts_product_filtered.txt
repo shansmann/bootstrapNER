@@ -1,0 +1,614 @@
+device
+item
+component
+product
+technology
+feature
+application
+object
+electronic device
+disruptive technology
+device category
+access loconet item
+service
+equipment
+communication material
+automation task type
+instructional material
+microsoft access datum
+vehicle
+system
+program
+technical issue
+iot device
+condition monitoring device
+control unit
+external component
+warning system
+emerging digital technology
+technology option
+goods
+tool
+activity
+resource
+element
+accessory
+machine
+advanced technology
+process
+material
+course
+source
+possession
+personal property
+repo property
+complimentary service
+modern electronic equipment
+big item
+perquisite
+part
+hardware
+facility
+key sector
+flame retardant
+treatment agent
+dry dressing
+aqueous solution
+crosslinking agent
+commercially important boron compound
+module
+supply
+unit
+luxury suvs
+support service
+electronic component
+design
+concept
+key model
+small luxury crossover
+luxurious version
+european suvs
+setting
+functionality
+administration task
+power source
+covered service
+technological advance
+renewable
+small scale system
+plant trait
+carbon source
+renewable energy option
+reactive solid fuel
+high profile issue
+electronic
+consumer electronic
+procedure
+platform
+innovation
+asset
+high technology product
+high refractive index material
+conductive material
+non conducting material
+workpiece
+work
+sensor
+spectroscopic technique
+effect factor
+collagen based adhesive
+historic glue
+food additive
+collagen-based adhesive
+protein material
+type of transportation
+animated movie
+small compact device
+wireless technology
+device application
+screen
+mobile communication device
+introduction mobile device
+cellular platform
+renewable energy
+goodie
+mechanical system
+instrument
+online service
+key activity
+information industry
+investment
+type of property
+combustion source
+physical entity
+non current asset
+inanimate object
+secured debt
+solution
+consumable item
+metallic object
+substrate
+emergent mechanism
+structural health monitoring technique
+emerging technology
+specialty
+smart device
+wireless system
+renewable source
+component type
+shredded whole grain food
+snack
+dosage form
+microelectronic element
+confectionary product
+comfort food
+mini game accessory
+popular snack
+nibble
+simple carb
+salty snack food
+expensive item
+ongoing department functionality
+construction management service
+heating product
+wsn technology
+short distance wireless communication technology
+established network protocol
+local area base station
+legacy wsn technology
+standard technique
+802 15 4 based technology
+radio network design
+wireless networking standard
+mobile device
+service activity
+conductor
+electrical appliance
+control
+open communication protocol
+building automation platform
+bus line
+standard communication protocol
+standard open control protocol
+common protocol
+open system protocol
+global standard
+poultice
+optional topping
+healthy thermogenic spice
+chili pepper
+stimulant
+pungent herb
+latest consumer electronic
+car
+energy source
+computing device
+consumer device
+portable electronic device
+free and fee-based document
+infrastructure piece
+software component
+semiconductor
+solid state characterization method
+software
+superior quality product
+usb device
+infrastructure based industry
+localized structure
+planarization technique
+strictly localized planar graph
+local planarization algorithm
+security module
+ngos
+suggestive research database
+contemporary mobile device
+mobile handheld device
+ubiquitous technology
+small screen
+wireless handheld device
+wireless communication device
+commodity
+long term assignment
+information resource
+information source
+communication technology
+quality product
+appliance
+energy resource
+high energy beam microscope
+charged particle beam instrument
+conventional electron microscope
+complementary analytical method
+conventional microscope
+charged particle optical system
+cross sectional profile metrology tool
+characterization tool
+analysis method
+analytic technique
+surface technique
+high resolution imaging technique
+imaging technique
+electrical component
+peripheral
+separate power source
+system item
+recyclable
+hazardous and toxic waste
+form of energy storage
+virtual reality headset
+vr headset
+semiconductor device
+autonomous power source
+dc power supply
+waste material
+electronic waste
+commercially available off the shelf part
+electrochemical system
+modular technology
+musical instrument
+innovative use
+land based renewable project
+renewable and alternative energy supply
+cam modality
+cargo
+light sensitive element
+photosensitive device
+light level sensor element
+semiconductor detector
+photoelectric conversion element
+photodetector
+photon detector
+light receiving element
+network device
+ac appliance
+gadget
+apps
+fuel
+electronics
+purpose system
+electronic system
+advanced feature
+embedded device
+video equipment
+project technique
+traditional chemical assay
+mature product line
+basic instrumental analysis method
+vr platform
+specification
+separate internal department
+consumable
+value added service
+bulk material
+quality low voltage switchgear component
+custom precision sheet metal component
+communication service
+tibco product
+turbid estuary
+datum terminal equipment
+standard utility
+infrastructure investment
+infrastructure requirement
+breakthrough invention
+low ghg alternative fuel
+energy related product
+electrical device
+integrated circuit
+communication device
+safety feature
+industrial application
+game
+valuable
+dockable assembly
+light maintenance
+resource information
+touchscreen device
+today s latest bluetooth device
+international business service
+service area
+infrastructure service
+value-added service
+idea based service
+small item
+conventional energy source
+conventional fossil fuel energy source
+clean energy source
+conventional energy resource
+valuable natural resource
+protic solvent
+co solvent
+organic solvent
+short chain organic chemical
+nucleophilic solvent
+organic molecule
+acidic beverage
+organic solvent preferably alcohol
+honeywell product
+industrial automation component
+edge wlan equipment
+rewired object
+normal business factor
+potential service
+high end luxury car
+space constrained system
+headset
+isotonic drink
+sporty model
+customization option
+standard feature
+traditional option
+loose goods
+simple ores
+conventional energy
+solid carbonaceous fuel
+worldwide natural resource
+scarce resource
+handheld device
+small electronic
+good
+edge technology
+artificial sensory system
+innovative system
+microwave electronic device
+wireless device
+implementation
+circuit
+instrumental parameter
+fossil fuel resource
+leasable mineral
+conventional fuel
+underground facility
+organizational asset
+nonphysical goods
+transmission medium
+synthetic antibacterial
+critical component
+latest technology
+commercial vehicle
+maxi 4wd
+poor gas mileage vehicle
+big van
+heavy duty vehicle
+luxury four-wheel drive vehicle
+common model
+up-armoured production vehicle
+asian mechanic
+personal vehicle
+luxury limo
+high clearance vehicle
+big vehicle
+large vehicle
+big ticket item
+specialty item
+external device
+book
+hardware component
+technological development
+biomass
+mathematical tool
+testing electronic component
+fourier transformation
+fabricating semiconductor device
+aspect of programming
+preferred digital audio workstation
+majority carrier device
+discrete component
+sic unipolar device
+discrete or analog component
+active device
+distribution device
+electronic switch
+power component
+contaminant
+luxury item
+advanced vehicle system
+non critical application
+green product
+motor vehicle
+zero emission car
+pure service industry
+technical program
+invasive procedure
+inorganic photosensitive material
+group vi element
+inorganic material
+dopant
+mineral
+toxic element
+popular product
+verticle fta signal
+electrical engineering challenge
+simple application
+centralized control system
+innovative measure
+vr device
+head mounted display
+low cost solution
+affordable hardware
+wearable product
+rubber product
+surrounding part
+man made material
+common replacement part
+recycled and bio based material
+medium device
+mobile computing device
+mobile wireless device
+high end item
+traditional sensor
+novel technology
+remote sensing wind measuring instrument
+advanced sensor
+accurate beach datum
+renewable energy source
+electronic equipment
+cwe pulse property
+electron property
+modeling embedded software device
+amenity
+central support service
+control device
+energy product
+experimental technique
+energy efficient lighting
+suvs
+high theft item
+fragile item
+native device function
+legacy serial product
+iphone main function
+3rd party device
+photogrammetric service
+repeated detailed topographic surveying
+advance technology
+heavy item
+mobile entertainment product
+storage system
+film
+disruptive trend
+idea
+alternative
+strategic asset
+mechanism
+merchandise
+heat source
+biomass fuel
+non-renewable resource
+carbon intense industry
+hdmi input source
+component video device
+hot application
+consumer av device
+hdmi source device
+mechanical part
+four-pillar-of-solutions
+end-to-end business solution
+recycled material
+fashion accessory
+household appliance
+unifying idea
+angle sensor
+optical device
+virtual image display apparatus
+virtual image display device
+wearable display system
+common neonatal illness
+conformal display
+possibility
+optical display system
+computerized mp3 device source
+high viscosity material
+hygroscopic engineering plastic
+internet enabled device
+mobile solution
+touch based device
+product category
+tto new chip application
+premium information
+informational product
+third party tool
+bluetooth compliant device
+displacement sensor
+photo editing software
+program-controlled unit
+datum processing system
+embedded processor
+audio format
+inexpensive computer part
+high performance system
+sensitive electronic equipment
+valuable item
+high-technology product
+technological aid
+design criterion
+qualitative factor
+small business solution
+complex device
+renewable technology
+approach
+rare emissive light source
+dc load
+illumination light source
+incorporated component
+circuit component
+adding additional sensor
+student test device
+sophisticated product
+passenger transport vehicle
+load carrying structure
+complex dynamic system
+personal property asset
+custom installation
+optional feature
+personal belonging
+wearable device
+movie
+personal item
+scrap metal
+consumer based equipment
+enabling technology
+advanced utility control
+detector
+sensitive component
+circuit element
+sensor device
+c bus unit
+led lighting product
+circuit device
+single chip digital processor
+external intelligent agent
+clinicopathological feature
+network object
+modern javascript tool
+green car
+low pollution vehicle
+experimental method
+advanced technology vehicle
+energy vehicle
+propulsion technology
+product line
+lexus car
+passenger car
+genetic approach
+software tool
+server
+teleseismic shear wave
+women s accessory
+argent or atramentous adornment item
+quality jewelry item
+handmade retail item
+environmental technology
+infrastructure development
+optoelectronic device
+atomic object
+basic feature
+medication
+field instrument
+aerospace application
+hydraulic system
+b metal equipment part
+fixture
+electronic product system
+custom ip solution
+damaged component inspection ofmmechanical component
+passive instrument
+emerging optical technology
+gaming system
+video game console
+personal online storage solution
+centralized web storage
+online drive service
+cloud-based storage solution
+critical application
+active safety feature
+routable system
+popular software
+multidisciplinary service
+load balancing mechanism
+ndt inspection service
+microtext expression
+certification
+treatment modality
+extensively route high impedance signal
+controller
+dg technology

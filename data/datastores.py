@@ -197,38 +197,49 @@ class AvroCollection(Collection):
 			m.update(document['id'].encode('utf-8'))
 			idd = str(int(m.hexdigest(), 16))[0:12]
 			annotations = []
-			for token in document['conceptMentions']:
-				word = token.get('normalizedValue', None)
-				start = token.get('span').get('start', None)
-				end = token.get('span').get('end', None)
-				if self.mode == 'auto':
-					concept_meta = token.get('attributes')
-					if concept_meta:
-						entity = concept_meta.get('sprout_ner_tag', '').replace('boot_ner_', '')
-						score = concept_meta.get('ms_concept_graph_rep_e_c', None)
-						if word and start and end and entity and score and entity in self.entities:
-							tok = Token(word, start, end, entity, float(score))
-							self.anno_counts[entity] += len(word_tokenize(word))
-							annotations.append(tok)
+			concept_mentions = document.get('conceptMentions', [])
+			if concept_mentions:
+				for token in concept_mentions:
+					word = token.get('normalizedValue', None)
+					start = token.get('span').get('start', None)
+					end = token.get('span').get('end', None)
+					if self.mode == 'auto':
+						concept_meta = token.get('attributes')
+						if concept_meta:
+							entity = concept_meta.get('sprout_ner_tag', '').replace('boot_ner_', '')
+							score = concept_meta.get('ms_concept_graph_rep_e_c', None)
+							if word and start and end and entity and score and entity in self.entities:
+								tok = Token(word, start, end, entity, float(score))
+								self.anno_counts[entity] += len(word_tokenize(word))
+								annotations.append(tok)
+							elif self.verbose:
+								logging.info('word: {} | start: {} | end: {} | entity: {} | score: {}'.format(word,
+																											  start,
+																											  end,
+																											  entity,
+																											  score))
+								logging.warning('invalid annotation found in document {}'.format(idd))
+					elif self.mode == 'man' or self.mode == 'semeval-man':
+						forbidden_pattern = re.compile(r"(company|firm|business|organization|we|our|ours|us|it|its|I|me|my|mine|you|your|yours|they|them|theirs|their|she|her|hers|him|his|he|itself|ourselves|themselves|myself|yourself|yourselves|himself|herself|which|who|whom|whose|whichever|whoever|whomever|those|these|this. + | that. + | this | that)", re.I | re.U)
+						entity = token.get('type', None)
+						if word and start and end and entity and entity in self.entities:
+							self.anno_counts_total[entity] += len(word_tokenize(word))
+							if self.mode == 'semeval-man':
+								tok = Token(word, start, end, entity, float(1), entity)
+								annotations.append(tok)
+								self.anno_counts[entity] += len(word_tokenize(word))
+							else:
+								if forbidden_pattern.match(word):
+									self.pronoun_matches[entity] += 1
+									self.pronoun_tokens_lost[entity] += len(word_tokenize(word))
+									if self.verbose:
+										logging.info('pronoun entity found. word: {}, entity: {} - skipping.'.format(word, entity))
+								else:
+									tok = Token(word, start, end, entity, float(1), entity)
+									annotations.append(tok)
+									self.anno_counts[entity] += len(word_tokenize(word))
 						elif self.verbose:
 							logging.warning('invalid annotation found in document {}'.format(idd))
-				else:
-					forbidden_pattern = re.compile(r"(company|firm|business|organization|we|our|ours|us|it|its|I|me|my|mine|you|your|yours|they|them|theirs|their|she|her|hers|him|his|he|itself|ourselves|themselves|myself|yourself|yourselves|himself|herself|which|who|whom|whose|whichever|whoever|whomever|those|these|this. + | that. + | this | that)", re.I | re.U)
-					entity = token.get('type', None)
-					if word and start and end and entity and entity in self.entities:
-						self.anno_counts_total[entity] += len(word_tokenize(word))
-						if forbidden_pattern.match(word):
-							self.pronoun_matches[entity] += 1
-							self.pronoun_tokens_lost[entity] += len(word_tokenize(word))
-							if self.verbose:
-								logging.info('pronoun entity found. word: {}, entity: {} - skipping.'.format(word, entity))
-						else:
-							tok = Token(word, start, end, entity, float(1), entity)
-							annotations.append(tok)
-							self.anno_counts[entity] += len(word_tokenize(word))
-					elif self.verbose:
-						logging.warning('invalid annotation found in document {}'.format(idd))
-
 			annotated_doc = Document(idd, annotations)
 			annotated_docs.append(annotated_doc)
 			if len(annotated_docs) % 100 == 0:

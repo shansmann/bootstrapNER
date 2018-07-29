@@ -9,7 +9,7 @@
 import sys
 import codecs
 
-mincount = 1
+mincount = 5
 minrep = 0.0
 
 def _validate(elems):
@@ -54,8 +54,8 @@ def convert(ne_type, infile, outfile, mincount):
                     print('Len elems != 3 or 6! %s' % l.strip())
     print('Converted %d/%d entries' % (writecount, rowcount))
 
-types = {'task':'gaz_task_type', 'material':'gaz_mat_type', 'product':'gaz_prod_type', 'organization':'gaz_org_type', 'process':'gaz_proc_type'}
-#types = {'product': 'gaz_product_type', 'organization':'gaz_org_type'}
+types = {'task':'gaz_task_type', 'material':'gaz_mat_type', 'process':'gaz_proc_type'}
+#types = {'product': 'gaz_prod_type', 'organization':'gaz_org_type'}
 for (ne_type, gaz_type) in types.items():
     #basedir = '/home/leonhard/Dokumente/forschung/gitlab/spree/tap/tap-models/src/main/resources/tap-models/sprout/gazetteer/gazfiles'
     basedir = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/concepts'
