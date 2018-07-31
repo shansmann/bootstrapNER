@@ -69,7 +69,7 @@ print(data['mappings'].keys())
 print("Label key: ", labelKey)
 print("label mappings: {}".format(data['mappings'][labelKey]))
 
-model = neuralnets.BiLSTM.BiLSTM(params)
+model = neuralnets.BiLSTM.BiLSTM(params, datasetName)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
