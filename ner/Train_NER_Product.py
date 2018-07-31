@@ -67,6 +67,7 @@ data = datasets[datasetName]
 print("Dataset:", datasetName)
 print(data['mappings'].keys())
 print("Label key: ", labelKey)
+print("label mappings: {}".format(data['mappings'][labelKey]))
 
 model = neuralnets.BiLSTM.BiLSTM(params)
 model.setMappings(embeddings, data['mappings'])

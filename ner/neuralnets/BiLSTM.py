@@ -56,9 +56,9 @@ class BiLSTM:
 	dataset = None
 	embeddings = None
 	labelKey = None
-	writeOutput = False
+	writeOutput = True
 	devAndTestEqual = False
-	resultsOut = None
+	resultsOut = True
 	modelSavePath = None
 	maxCharLen = None
 	avgEpochLoss = 0
@@ -222,7 +222,7 @@ class BiLSTM:
 			self.remove_identity_layer()
 			self.add_noise_mitigation()
 			self.compile_model()
-		else:
+		elif self.params['noise']:
 			self.add_noise_mitigation()
 			self.compile_model()
 
@@ -234,8 +234,8 @@ class BiLSTM:
 		model = self.base_model
 		output_old = model.layers[-1].output
 
-		# dropout model
 		if self.params['noise'] == 'dropout':
+			# dropout model
 			hadamard_jindal = TimeDistributed(Dropout(.1),
 											  name='hadamard_jindal')(output_old)
 
@@ -249,8 +249,8 @@ class BiLSTM:
 
 			output = TimeDistributed(Activation('softmax'),
 									 name='softmax_jindal')(dense_jindal)
-		# trace model
-		if self.params['noise'] == 'trace':
+		elif self.params['noise'] == 'trace':
+			# trace model
 			output = TimeDistributed(Dense(self.num_classes,
 										   activation='linear',
 										   trainable=True,
@@ -259,9 +259,8 @@ class BiLSTM:
 										   kernel_regularizer=TraceRegularizer(lamb=.01),
 										   kernel_initializer='identity'),
 									 name='linear_noise')(output_old)
-
-		# fix noise model
-		if self.params['noise'] == 'fix':
+		elif self.params['noise'] == 'fix':
+			# fix noise model
 			output = TimeDistributed(Dense(self.num_classes,
 										   activation='linear',
 										   trainable=False,
@@ -291,7 +290,6 @@ class BiLSTM:
 
 	def remove_identity_layer(self):
 		"""
-
 		:return:
 		"""
 		model = self.model
@@ -331,11 +329,8 @@ class BiLSTM:
 		self.model = model
 
 	def trainModel(self):
-		#if self.model == None:
-		#	self.buildModel()
 
 		trainMatrix = self.dataset['trainMatrix']
-		#self.epoch += 1
 
 		if self.params['optimizer'] in self.learning_rate_updates and self.epoch + 1 in self.learning_rate_updates[self.params['optimizer']]:
 			K.set_value(self.model.optimizer.lr, self.learning_rate_updates[self.params['optimizer']][self.epoch + 1])
@@ -534,6 +529,9 @@ class BiLSTM:
 				self.logger.log_scalar(tag='f1_dev', value=dev_score, step=epoch + 1)
 			#self.logger.log_images(tag='weights_jindal', images=[self.plot_noise_dist(dev_score)], step=epoch + 1)
 
+			if self.verboseBuild and self.params["noise"]:
+				self.plot_noise_dist(dev_score)
+
 			if dev_score > max_dev_score:
 				no_improvement_since = 0
 				max_dev_score = dev_score
@@ -561,7 +559,7 @@ class BiLSTM:
 				no_improvement_since += 1
 
 			if self.resultsOut != None:
-				self.resultsOut.write("\t".join(map(str, [epoch + 1, dev_score, max_dev_score])))
+				self.resultsOut.write("\t".join(map(str, [epoch + 1, self.avgEpochLoss, dev_score, max_dev_score])))
 				self.resultsOut.write("\n")
 				self.resultsOut.flush()
 
@@ -594,15 +592,16 @@ class BiLSTM:
 		else:
 			layer = self.model.layers[-1].layer
 		weights = layer.get_weights()[0]
-		print(weights)
-		print(self.params['noise_dist'])
+
+		plotpath = "plots/%s/%s/%s/" % (self.datasetName, self.labelKey, self.params['noise'])
+
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
 		pylab.xticks(np.arange(self.num_classes), labels, rotation=45)
 		pylab.yticks(np.arange(self.num_classes), labels)
 		pylab.colorbar()
-		pylab.title('learned noise - {} - {} - score: {}'.format(self.datasetName, self.params['noise'], np.round(test_score, 4)))
+		pylab.title('learned noise - {} - {} - score: {} - epoch: {}'.format(self.datasetName, self.params['noise'], np.round(test_score, 4), self.epoch))
 		pylab.tight_layout()
-		pylab.savefig('noise_{}_{}_{}.pdf'.format(self.datasetName, self.params['noise'], np.round(test_score, 2)))
+		pylab.savefig(plotpath + 'noise_dist_pre_{}_{}_{}.pdf'.format(self.params["pretraining"], self.epoch, np.round(test_score, 2)))
 
 	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or \
@@ -669,7 +668,7 @@ class BiLSTM:
 		# similar to sklearn.f1_score(average='micro'), excludes token 'O'
 		pre, rec, f1 = BIOF1Validation.compute_f1_token_basis(predLabels, correctLabels, 'O')
 
-		if self.writeOutput:
+		if self.writeOutput and noise:
 			self.writeOutputToFile(sentences, predLabels, '%.4f_%s' % (f1))
 		return pre, rec, f1
 
@@ -714,7 +713,8 @@ class BiLSTM:
 		return labels
 
 	def writeOutputToFile(self, sentences, predLabels, name):
-		outputName = 'tmp/' + name
+		plotpath = "plots/%s/%s/%s/" % (self.datasetName, self.labelKey, self.params['noise'])
+		outputName = plotpath + name
 		fOut = open(outputName, 'w')
 
 		for sentenceIdx in range(len(sentences)):
