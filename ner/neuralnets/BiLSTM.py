@@ -75,6 +75,7 @@ class BiLSTM:
 		if params != None:
 			self.params.update(params)
 		self.datasetName = datasetName
+		self.plotpath = "plots/%s/%s/%s/" % (self.datasetName, self.labelKey, self.params['noise'])
 
 		logging.info("BiLSTM model initialized with parameters: %s" % str(self.params))
 
@@ -201,7 +202,8 @@ class BiLSTM:
 
 		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
 		if self.verboseBuild:
-			plot_model(model, to_file='basemodel.png', show_shapes=True, show_layer_names=True)
+			path = self.plotpath + 'basemodel.png'
+			plot_model(model, to_file=path, show_shapes=True, show_layer_names=True)
 		self.base_model = model
 
 	def prepare_model_for_evaluation(self):
@@ -271,7 +273,8 @@ class BiLSTM:
 
 		new_model = Model(inputs=model.inputs, outputs=output)
 		if self.verboseBuild:
-			plot_model(new_model, to_file='model_{}.png'.format(self.params['noise']), show_shapes=True,
+			path = self.plotpath + 'model_{}.png'.format(self.params['noise'])
+			plot_model(new_model, to_file=path, show_shapes=True,
 					   show_layer_names=True)
 		self.base_model = new_model
 
@@ -593,15 +596,13 @@ class BiLSTM:
 			layer = self.model.layers[-1].layer
 		weights = layer.get_weights()[0]
 
-		plotpath = "plots/%s/%s/%s/" % (self.datasetName, self.labelKey, self.params['noise'])
-
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
 		pylab.xticks(np.arange(self.num_classes), labels, rotation=45)
 		pylab.yticks(np.arange(self.num_classes), labels)
 		pylab.colorbar()
 		pylab.title('learned noise - {} - {} - score: {} - epoch: {}'.format(self.datasetName, self.params['noise'], np.round(test_score, 4), self.epoch))
 		pylab.tight_layout()
-		pylab.savefig(plotpath + 'noise_dist_pre_{}_{}_{}.pdf'.format(self.params["pretraining"], self.epoch, np.round(test_score, 2)))
+		pylab.savefig(self.plotpath + 'noise_dist_pre_{}_{}_{}.pdf'.format(self.params["pretraining"], self.epoch, np.round(test_score, 2)))
 
 	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or \
@@ -713,8 +714,8 @@ class BiLSTM:
 		return labels
 
 	def writeOutputToFile(self, sentences, predLabels, name):
-		plotpath = "plots/%s/%s/%s/" % (self.datasetName, self.labelKey, self.params['noise'])
-		outputName = plotpath + name
+		resultpath = "results/%s/%s/%s/" % (self.datasetName, self.labelKey, self.params['noise'])
+		outputName = resultpath + name
 		fOut = open(outputName, 'w')
 
 		for sentenceIdx in range(len(sentences)):
