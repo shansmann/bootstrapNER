@@ -76,6 +76,9 @@ class BiLSTM:
 			self.params.update(params)
 		self.datasetName = datasetName
 		self.plotpath = "plots/%s/%s/%s/" % (self.datasetName, self.labelKey, self.params['noise'])
+		directory = os.path.dirname(self.plotpath)
+		if not os.path.exists(directory):
+			os.makedirs(directory)
 
 		logging.info("BiLSTM model initialized with parameters: %s" % str(self.params))
 
@@ -715,6 +718,9 @@ class BiLSTM:
 
 	def writeOutputToFile(self, sentences, predLabels, name):
 		resultpath = "results/%s/%s/%s/" % (self.datasetName, self.labelKey, self.params['noise'])
+		directory = os.path.dirname(resultpath)
+		if not os.path.exists(directory):
+			os.makedirs(directory)
 		outputName = resultpath + name
 		fOut = open(outputName, 'w')
 
