@@ -14,6 +14,7 @@ import math
 import numpy as np
 import logging
 import matplotlib
+import itertools
 
 matplotlib.use('Agg')  # Must be before importing matplotlib.pyplot or pylab!
 import pylab
@@ -71,11 +72,14 @@ class BiLSTM:
 			  'charLSTMSize': 25, 'clipvalue': 0, 'clipnorm': 1, 'noise': False, 'noise_dist': False,
 			  'pretraining': False}  # Default params
 
-	def __init__(self, params=None, datasetName=None):
+	def __init__(self, params=None, datasetName=None, labelkey=None):
 		if params != None:
 			self.params.update(params)
+
 		self.datasetName = datasetName
+		self.labelKey = labelkey
 		self.plotpath = "plots/%s/%s/%s/" % (self.datasetName, self.labelKey, self.params['noise'])
+
 		directory = os.path.dirname(self.plotpath)
 		if not os.path.exists(directory):
 			os.makedirs(directory)
@@ -220,7 +224,12 @@ class BiLSTM:
 		if self.params['pretraining']:
 			self.add_identity_layer()
 			self.compile_model()
-			self.evaluate(5, pretraining=True)
+
+			if self.verboseBuild:
+				self.model.summary()
+				logging.info(self.model.get_config())
+
+			self.evaluate(2, pretraining=True)
 			#layer = self.model.layers[-1].layer
 			#assert layer.get_weights()[0] == np.identity(self.num_classes)
 			self.epoch = 0
@@ -512,6 +521,9 @@ class BiLSTM:
 		max_dev_score = 0
 		no_improvement_since = 0
 
+		if self.verboseBuild and self.params["noise"]:
+			self.plot_noise_dist(0, pretraining)
+
 		for epoch in range(epochs):
 			sys.stdout.flush()
 			if not pretraining:
@@ -536,7 +548,10 @@ class BiLSTM:
 			#self.logger.log_images(tag='weights_jindal', images=[self.plot_noise_dist(dev_score)], step=epoch + 1)
 
 			if self.verboseBuild and self.params["noise"]:
-				self.plot_noise_dist(dev_score)
+				if pretraining:
+					self.plot_noise_dist(dev_score, pretraining)
+				else:
+					self.plot_noise_dist(dev_score)
 
 			if dev_score > max_dev_score:
 				no_improvement_since = 0
@@ -587,9 +602,10 @@ class BiLSTM:
 				test_score = self.compute_test_score(testMatrix, noise=False)
 
 			if self.verboseBuild and self.params["noise"]:
+				self.epoch+=1
 				self.plot_noise_dist(test_score)
 
-	def plot_noise_dist(self, test_score):
+	def plot_noise_dist(self, test_score, pretraining=False):
 		labels = [0] * self.num_classes
 		for key, value in self.mappings[self.labelKey].items():
 			labels[value] = key
@@ -598,14 +614,25 @@ class BiLSTM:
 		else:
 			layer = self.model.layers[-1].layer
 		weights = layer.get_weights()[0]
+		plotname = 'noise_dist_epoch_{}_{}.pdf' if not pretraining else 'pretraining_noise_dist_epoch_{}_{}.pdf'
 
+		pylab.figure()
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
 		pylab.xticks(np.arange(self.num_classes), labels, rotation=45)
 		pylab.yticks(np.arange(self.num_classes), labels)
+
+		fmt = '.4f'
+		thresh = weights.max() / 2.
+		for i, j in itertools.product(range(weights.shape[0]), range(weights.shape[1])):
+			plt.text(j, i, format(weights[i, j], fmt),
+					 horizontalalignment="center",
+					 color="white" if weights[i, j] > thresh else "black")
+
 		pylab.colorbar()
-		pylab.title('learned noise - {} - {} - score: {} - epoch: {}'.format(self.datasetName, self.params['noise'], np.round(test_score, 4), self.epoch))
+		pylab.title('learned noise - {} - {} - score: {} - epoch: {}'.format(self.datasetName, self.params['noise'],
+																			 np.round(test_score, 4), self.epoch))
 		pylab.tight_layout()
-		pylab.savefig(self.plotpath + 'noise_dist_pre_{}_{}_{}.pdf'.format(self.params["pretraining"], self.epoch, np.round(test_score, 2)))
+		pylab.savefig(self.plotpath + plotname.format(self.epoch, np.round(test_score, 2)))
 
 	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or \
@@ -673,7 +700,8 @@ class BiLSTM:
 		pre, rec, f1 = BIOF1Validation.compute_f1_token_basis(predLabels, correctLabels, 'O')
 
 		if self.writeOutput and noise:
-			self.writeOutputToFile(sentences, predLabels, '%.4f_%s' % (f1))
+			self.writeOutputToFile(sentences, predLabels, 'f1_{}.txt'.format(np.round(f1, 2)))
+
 		return pre, rec, f1
 
 	def computeAcc(self, sentences, noise=False):
@@ -726,12 +754,16 @@ class BiLSTM:
 
 		for sentenceIdx in range(len(sentences)):
 			for tokenIdx in range(len(sentences[sentenceIdx]['tokens'])):
-				token = self.idx2Word[sentences[sentenceIdx]['tokens'][tokenIdx]]
-				label = self.idx2Label[sentences[sentenceIdx][self.labelKey][tokenIdx]]
-				predLabel = self.idx2Label[predLabels[sentenceIdx][tokenIdx]]
+				try:
+					token = self.idx2Word[sentences[sentenceIdx]['tokens'][tokenIdx]]
+					label = self.idx2Label[sentences[sentenceIdx][self.labelKey][tokenIdx]]
+					predLabel = self.idx2Label[predLabels[sentenceIdx][tokenIdx]]
 
-				fOut.write("\t".join([token, label, predLabel]))
-				fOut.write("\n")
+					fOut.write("\t".join([token, label, predLabel]))
+					fOut.write("\n")
+				except:
+					logging.info('pred label index error, token: {}, label: {}'.format(self.idx2Word[sentences[sentenceIdx]['tokens'][tokenIdx]],
+																					   self.idx2Label[sentences[sentenceIdx][self.labelKey][tokenIdx]]))
 
 			fOut.write("\n")
 
@@ -754,4 +786,3 @@ class BiLSTM:
 
 		self.model = model
 		self.setMappings(None, mappings)
-		self.plot_noise_dists('0.0345')

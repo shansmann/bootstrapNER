@@ -13,3 +13,4 @@ __pychache__
 /ner/glove.840B.300d.txt
 /ner/models/*/*.h5
 /ner/pkl/*.pkl
+tmp

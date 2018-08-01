@@ -75,12 +75,12 @@ print("Label key: ", labelKey)
 print("label mappings: {}".format(data['mappings'][labelKey]))
 
 
-model = neuralnets.BiLSTM.BiLSTM(params, datasetName)
+model = neuralnets.BiLSTM.BiLSTM(params, datasetName, labelKey)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
-model.create_base_model()
-model.prepare_model_for_evaluation()
 model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey, params['noise']) #Enable this line to save the model to the disk
 model.storeResults("results/%s/%s/%s/scores.txt" % (datasetName, labelKey, params['noise']))
-model.evaluate(20)
+model.create_base_model()
+model.prepare_model_for_evaluation()
+model.evaluate(5)

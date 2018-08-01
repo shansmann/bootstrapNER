@@ -48,12 +48,16 @@ params = {'dropout': [0.25, 0.25],
           'LSTM-Size': [100,75],
           'optimizer': 'nadam',
           'charEmbeddings': 'LSTM',
-          'miniBatchSize': 32,
-          'noise': 'fix',
-		  'noise_dist': rnd_matrix,
-		  'pretraining': True}
+          'miniBatchSize': 64,
+          'noise': sys.argv[1],
+          'pretraining': False}
 
-frequencyThresholdUnknownTokens = 5  # If a token that is not in the pre-trained embeddings file appears at least x times in the train.txt, a new embedding is generated for this word
+if len(sys.argv[1:]) == 2:
+    weight_path = sys.argv[2]
+    weights = np.loadtxt(weight_path)
+    params['noise_dist'] = weights
+
+frequencyThresholdUnknownTokens = 5 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
 
 datasetFiles = [
@@ -76,13 +80,15 @@ data = datasets[datasetName]
 print("Dataset:", datasetName)
 print(data['mappings'].keys())
 print("Label key: ", labelKey)
+print("label mappings: {}".format(data['mappings'][labelKey]))
 
-model = neuralnets.BiLSTM.BiLSTM(params, datasetName)
+
+model = neuralnets.BiLSTM.BiLSTM(params, datasetName, labelKey)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
-#model.buildModel()
+model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey, params['noise']) #Enable this line to save the model to the disk
+model.storeResults("results/%s/%s/%s/scores.txt" % (datasetName, labelKey, params['noise']))
 model.create_base_model()
 model.prepare_model_for_evaluation()
-model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, labelKey, params['noise']) #Enable this line to save the model to the disk
-model.evaluate(1)
+model.evaluate(20)

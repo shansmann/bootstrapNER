@@ -2,7 +2,3 @@
 *
 # Except this file
 !.gitignore
-!product_corpus_man*
-!sensor_corpus*
-!semeval_man*
-!science_corpus*
