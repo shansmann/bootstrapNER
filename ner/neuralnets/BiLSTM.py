@@ -26,6 +26,7 @@ from keras.models import Model
 from keras.layers import *
 from keras.optimizers import *
 from keras.utils import *
+from keras import regularizers
 from keras.callbacks import TensorBoard
 from .keraslayers.LinNoise import ProbabilityConstraint, TraceRegularizer, SGD_lr_mult, NumpyInitializer
 
@@ -189,11 +190,13 @@ class BiLSTM:
 		merged = keras.layers.concatenate(concat_layers,
 										  name='concat_layer')
 
+		dropout = Dropout(.5)(merged)
+
 		bi_lstm_1 = Bidirectional(LSTM(params['LSTM-Size'][0],
 									   return_sequences=True,
 									   dropout=params['dropout'][0],
 									   recurrent_dropout=params['dropout'][1]),
-								  name="BiLSTM_1")(merged)
+								  name="BiLSTM_1")(dropout)
 
 		bi_lstm_2 = Bidirectional(LSTM(params['LSTM-Size'][1],
 									   return_sequences=True,
@@ -229,7 +232,7 @@ class BiLSTM:
 				self.model.summary()
 				logging.info(self.model.get_config())
 
-			self.evaluate(2, pretraining=True)
+			self.evaluate(5, pretraining=True)
 			#layer = self.model.layers[-1].layer
 			#assert layer.get_weights()[0] == np.identity(self.num_classes)
 			self.epoch = 0
@@ -270,7 +273,8 @@ class BiLSTM:
 										   trainable=True,
 										   use_bias=False,
 										   kernel_constraint=ProbabilityConstraint(),
-										   kernel_regularizer=TraceRegularizer(lamb=.01),
+										   #kernel_regularizer=TraceRegularizer(lamb=.01),
+										   kernel_regularizer=keras.regularizers.l2(0.1),
 										   kernel_initializer='identity'),
 									 name='linear_noise')(output_old)
 		elif self.params['noise'] == 'fix':
@@ -337,7 +341,7 @@ class BiLSTM:
 		elif params['optimizer'].lower() == 'adagrad':
 			opt = Adagrad(**optimizerParams)
 		elif params['optimizer'].lower() == 'sgd':
-			opt = SGD(lr=0.1, **optimizerParams)
+			opt = SGD(lr=0.01, **optimizerParams)
 
 		model.compile(loss='sparse_categorical_crossentropy',
 					  optimizer=opt)

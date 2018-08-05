@@ -4,7 +4,7 @@ import logging
 import sys
 import neuralnets.BiLSTM
 import util.preprocessing
-
+import numpy as np
 
 # :: Change into the working dir of the script ::
 abspath = os.path.abspath(__file__)
@@ -18,7 +18,7 @@ logger.setLevel(loggingLevel)
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(loggingLevel)
-formatter = logging.Formatter('%(message)s')
+formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
@@ -29,11 +29,12 @@ logger.addHandler(ch)
 ######################################################
 
 # :: Train / Dev / Test-Files ::
-datasetName = 'product_corpus_man'
+datasetName = 'sensor_sample'
 dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
 labelKey = 'NER'
 
 embeddingsPath = '/mnt/hdd/datasets/glove_embeddings/glove.840B.300d.txt' #glove word embeddings
+#embeddingsPath = 'glove.840B.300d.txt' #glove word embeddings
 
 #Parameters of the network
 params = {'dropout': [0.5, 0.5],
@@ -43,7 +44,13 @@ params = {'dropout': [0.5, 0.5],
           'clipvalue': 5,
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 64,
-          'noise': False}
+          'noise': sys.argv[1],
+          'pretraining': True}
+
+if len(sys.argv[1:]) == 2 and sys.argv[1] == 'fix':
+    weight_path = sys.argv[2]
+    weights = np.loadtxt(weight_path)
+    params['noise_dist'] = weights
 
 frequencyThresholdUnknownTokens = 5 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
@@ -69,6 +76,7 @@ print("Dataset:", datasetName)
 print(data['mappings'].keys())
 print("Label key: ", labelKey)
 print("label mappings: {}".format(data['mappings'][labelKey]))
+
 
 model = neuralnets.BiLSTM.BiLSTM(params, datasetName, labelKey)
 model.setMappings(embeddings, data['mappings'])

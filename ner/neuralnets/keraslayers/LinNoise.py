@@ -10,7 +10,7 @@ from keras.initializers import Initializer
 class ProbabilityConstraint(Constraint):
     """This class implements the Probability Constraint
 
-    Matrix is first casted non-negativ
+    Matrix is first normalized to [0, 1] (Min/Max Norm.)
     after which a unit norm on row level is enforced
     """
 
@@ -18,10 +18,19 @@ class ProbabilityConstraint(Constraint):
         pass
 
     def __call__(self, w):
-        w *= K.cast(K.greater_equal(w, 0.), K.floatx())
-        weights = w / (K.epsilon() + K.sqrt(K.sum(K.square(w),
-                                        axis=1,
-                                        keepdims=True)))
+        #w *= K.cast(K.greater_equal(w, 0.), K.floatx())
+        # weights = w / (K.epsilon() + K.sqrt(K.sum(K.square(w),
+        #                                           axis=1,
+        #                                           keepdims=True)))
+        non_neg = (w - K.min(w)) / (K.max(w) - K.min(w))
+        weights = non_neg / (K.epsilon() + K.sqrt(K.sum(K.square(non_neg),
+                                                  axis=1,
+                                                  keepdims=True)))
+
+
+        #weights = K.tf.nn.softmax(w, axis=0)
+
+
         return weights
 
 class TraceRegularizer(Regularizer):

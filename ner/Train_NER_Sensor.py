@@ -34,17 +34,20 @@ dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains th
 labelKey = 'NER'
 
 embeddingsPath = '/mnt/hdd/datasets/glove_embeddings/glove.840B.300d.txt' #glove word embeddings
+#embeddingsPath = 'glove.840B.300d.txt' #glove word embeddings
 
 #Parameters of the network
-params = {'dropout': [0.25, 0.25],
+params = {'dropout': [0.5, 0.5],
           'classifier': 'softmax',
-          'LSTM-Size': [100,75],
-          'optimizer': 'nadam',
+          'LSTM-Size': [100,100],
+          'optimizer': 'sgd',
+          'clipvalue': 5,
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 64,
-          'noise': sys.argv[1]}
+          'noise': sys.argv[1],
+          'pretraining': False}
 
-if len(sys.argv[1:]) == 2:
+if len(sys.argv[1:]) == 2 and sys.argv[1] == 'fix':
     weight_path = sys.argv[2]
     weights = np.loadtxt(weight_path)
     params['noise_dist'] = weights
