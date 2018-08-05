@@ -703,7 +703,7 @@ class BiLSTM:
 		# similar to sklearn.f1_score(average='micro'), excludes token 'O'
 		pre, rec, f1 = BIOF1Validation.compute_f1_token_basis(predLabels, correctLabels, 'O')
 
-		if self.writeOutput and noise:
+		if self.writeOutput:
 			self.writeOutputToFile(sentences, predLabels, 'f1_{}.txt'.format(np.round(f1, 2)))
 
 		return pre, rec, f1
