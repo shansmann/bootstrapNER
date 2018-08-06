@@ -41,7 +41,7 @@ if (sys.version_info > (3, 0)):
 else:  # Python 2.7 imports
 	import cPickle as pkl
 
-K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads=4, inter_op_parallelism_threads=4)))
+K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads=8, inter_op_parallelism_threads=8)))
 
 class BiLSTM:
 	additionalFeatures = []
@@ -190,13 +190,13 @@ class BiLSTM:
 		merged = keras.layers.concatenate(concat_layers,
 										  name='concat_layer')
 
-		dropout = Dropout(.5)(merged)
+		#dropout = Dropout(.5)(merged)
 
 		bi_lstm_1 = Bidirectional(LSTM(params['LSTM-Size'][0],
 									   return_sequences=True,
 									   dropout=params['dropout'][0],
 									   recurrent_dropout=params['dropout'][1]),
-								  name="BiLSTM_1")(dropout)
+								  name="BiLSTM_1")(merged)
 
 		bi_lstm_2 = Bidirectional(LSTM(params['LSTM-Size'][1],
 									   return_sequences=True,
@@ -323,7 +323,7 @@ class BiLSTM:
 		params = self.params
 		model = self.base_model
 
-		optimizerParams = {}
+		optimizerParams = {'lr': 0.01}
 		if 'clipnorm' in self.params and self.params['clipnorm'] != None and self.params['clipnorm'] > 0:
 			optimizerParams['clipnorm'] = self.params['clipnorm']
 
@@ -613,7 +613,7 @@ class BiLSTM:
 		labels = [0] * self.num_classes
 		for key, value in self.mappings[self.labelKey].items():
 			labels[value] = key
-		if self.params['noise'] == 'dropout':
+		if self.params['noise'] == 'dropout' and not pretraining:
 			layer = self.model.layers[-2].layer
 		else:
 			layer = self.model.layers[-1].layer
@@ -701,9 +701,9 @@ class BiLSTM:
 		#	pre, rec, f1 = pre_b, rec_b, f1_b
 
 		# similar to sklearn.f1_score(average='micro'), excludes token 'O'
-		pre, rec, f1 = BIOF1Validation.compute_f1_token_basis(predLabels, correctLabels, 'O')
+		pre, rec, f1 = BIOF1Validation.compute_f1_token_basis(predLabels, correctLabels, 0)
 
-		if self.writeOutput:
+		if self.writeOutput and noise:
 			self.writeOutputToFile(sentences, predLabels, 'f1_{}.txt'.format(np.round(f1, 2)))
 
 		return pre, rec, f1

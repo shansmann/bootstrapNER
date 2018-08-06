@@ -5,8 +5,8 @@ import itertools
 from collections import Counter
 
 
-labels = ['O', 'product', 'organization']
-#labels = ['O', 'process', 'task', 'material']
+#labels = ['O', 'product', 'organization']
+labels = ['O', 'process', 'task', 'material']
 
 def read_tagging(path):
 	data = []
@@ -62,7 +62,7 @@ def plot_confusion_matrix(cm, classes,
 	plt.tight_layout()
 	plt.ylabel('Manual')
 	plt.xlabel('Automatic')
-	plt.savefig('confusion_matrix_dist_product_norm.pdf')
+	plt.savefig('confusion_matrix_dist_semeval_norm.pdf')
 	plt.show()
 
 def plot_histo(y, labels, name):
@@ -115,11 +115,11 @@ def compute_f1_token_basis(predictions, correct, O_Label):
 	return prec, rec, f1
 
 
-man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/train.txt'
-auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/train.txt'
+#man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/train.txt'
+#auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/train.txt'
 
-#man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_man/train.txt'
-#auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_auto/train.txt'
+man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_man/train.txt'
+auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_auto/train.txt'
 
 pred = read_tagging(auto_path)
 test = read_tagging(man_path)
@@ -130,10 +130,11 @@ flat_test = [item for sublist in test for item in sublist]
 print(Counter(flat_pred))
 print(Counter(flat_test))
 
+prec, rec, f1 = compute_f1_token_basis(pred, test, 'O')
 C = confusion_matrix(flat_test, flat_pred, labels=labels)
-plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=True, title='Confusion matrix: Man- vs. Auto-Labels - token basis', save=False)
+plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=True, title='Confusion matrix: prec: {}; rec: {}; f1: {} - token basis'.format(np.round(prec, 2), np.round(rec, 2), np.around(f1, 2)), save=False)
 
-print(f1_score(flat_test, flat_pred, average='micro', labels=labels))
+#print(f1_score(flat_test, flat_pred, average='micro', labels=labels))
 print(compute_f1_token_basis(pred, test, 'O'))
 
 #plot_histo(flat_test, ['product', 'organization'], 'man')

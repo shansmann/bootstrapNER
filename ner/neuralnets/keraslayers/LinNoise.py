@@ -18,16 +18,17 @@ class ProbabilityConstraint(Constraint):
         pass
 
     def __call__(self, w):
-        #w *= K.cast(K.greater_equal(w, 0.), K.floatx())
-        # weights = w / (K.epsilon() + K.sqrt(K.sum(K.square(w),
-        #                                           axis=1,
-        #                                           keepdims=True)))
+        w *= K.cast(K.greater_equal(w, 0.), K.floatx())
+        weights = w / (K.epsilon() + K.sqrt(K.sum(K.square(w),
+                                                  axis=1,
+                                                  keepdims=True)))
         #non_neg = (w - K.min(w)) / (K.max(w) - K.min(w))
         #weights = non_neg / (K.epsilon() + K.sqrt(K.sum(K.square(non_neg),
         #                                          axis=1,
         #                                          keepdims=True)))
 
-        weights = K.tf.nn.softmax(w, axis=1)
+        #weights = K.tf.nn.softmax(w, axis=1)
+        #weights = tf.exp(w) / tf.reduce_sum(tf.exp(w), 1)
 
         return weights
 

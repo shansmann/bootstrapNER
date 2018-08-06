@@ -40,7 +40,7 @@ embeddingsPath = '/mnt/hdd/datasets/glove_embeddings/glove.840B.300d.txt' #glove
 params = {'dropout': [0.5, 0.5],
           'classifier': 'softmax',
           'LSTM-Size': [100,100],
-          'optimizer': 'sgd',
+          'optimizer': 'nadam',
           'clipvalue': 5,
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 64,
@@ -86,4 +86,4 @@ model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, la
 model.storeResults("results/%s/%s/%s/scores.txt" % (datasetName, labelKey, params['noise']))
 model.create_base_model()
 model.prepare_model_for_evaluation()
-model.evaluate(10)
+model.evaluate(15)
