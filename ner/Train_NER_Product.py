@@ -39,7 +39,7 @@ embeddingsPath = '/mnt/hdd/datasets/glove_embeddings/glove.840B.300d.txt' #glove
 params = {'dropout': [0.5, 0.5],
           'classifier': 'softmax',
           'LSTM-Size': [100,100],
-          'optimizer': 'sgd',
+          'optimizer': 'nadam',
           'clipvalue': 5,
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 64,
