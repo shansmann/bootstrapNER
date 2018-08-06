@@ -281,11 +281,11 @@ class BiLSTM:
 			# fix noise model
 			output = TimeDistributed(Dense(self.num_classes,
 										   activation='linear',
-										   trainable=False,
+										   trainable=True,
 										   use_bias=False,
 										   kernel_initializer=NumpyInitializer(self.params['noise_dist'])),
 									 name='fixed_noise',
-									 trainable=False)(output_old)
+									 trainable=True)(output_old)
 
 		new_model = Model(inputs=model.inputs, outputs=output)
 		if self.verboseBuild:
@@ -526,7 +526,7 @@ class BiLSTM:
 		no_improvement_since = 0
 
 		if self.verboseBuild and self.params["noise"]:
-			self.plot_noise_dist(0, pretraining)
+			self.plot_noise_dist(0, 0, 0, pretraining=pretraining)
 
 		for epoch in range(epochs):
 			sys.stdout.flush()
@@ -543,7 +543,7 @@ class BiLSTM:
 			logging.info("%.2f sec for training (%.2f total)" % (time_diff, total_train_time))
 
 			start_time = time.time()
-			dev_score = self.compute_dev_score(devMatrix)
+			dev_prec, dev_rec, dev_score = self.compute_dev_score(devMatrix)
 
 			# logging
 			if not pretraining:
@@ -553,9 +553,9 @@ class BiLSTM:
 
 			if self.verboseBuild and self.params["noise"]:
 				if pretraining:
-					self.plot_noise_dist(dev_score, pretraining)
+					self.plot_noise_dist(dev_prec, dev_rec, dev_score, pretraining)
 				else:
-					self.plot_noise_dist(dev_score)
+					self.plot_noise_dist(dev_prec, dev_rec, dev_score)
 
 			if dev_score > max_dev_score:
 				no_improvement_since = 0
@@ -600,16 +600,16 @@ class BiLSTM:
 			# TODO: calculate noise free model score on test data
 			if self.params.get('noise', False):
 				logging.info("creating noise free model for test evaluation")
-				test_score = self.compute_test_score(testMatrix, noise=True)
+				test_prec, test_rec, test_score = self.compute_test_score(testMatrix, noise=True)
 				self.logger.log_scalar(tag='f1_test', value=test_score, step=epochs)
 			else:
-				test_score = self.compute_test_score(testMatrix, noise=False)
+				test_prec, test_rec, test_score = self.compute_test_score(testMatrix, noise=False)
 
 			if self.verboseBuild and self.params["noise"]:
 				self.epoch+=1
-				self.plot_noise_dist(test_score)
+				self.plot_noise_dist(test_prec, test_rec, test_score)
 
-	def plot_noise_dist(self, test_score, pretraining=False):
+	def plot_noise_dist(self, prec, recall, f1, pretraining=False):
 		labels = [0] * self.num_classes
 		for key, value in self.mappings[self.labelKey].items():
 			labels[value] = key
@@ -618,7 +618,7 @@ class BiLSTM:
 		else:
 			layer = self.model.layers[-1].layer
 		weights = layer.get_weights()[0]
-		plotname = 'noise_dist_epoch_{}_{}.pdf' if not pretraining else 'pretraining_noise_dist_epoch_{}_{}.pdf'
+		plotname = 'noise_dist_{}_e_{}_f1_{}.pdf' if not pretraining else 'pretraining_noise_dist_{}_e_{}_f1_{}.pdf'
 
 		pylab.figure()
 		pylab.imshow(weights, cmap=pylab.cm.Blues, interpolation='nearest')
@@ -633,10 +633,10 @@ class BiLSTM:
 					 color="white" if weights[i, j] > thresh else "black")
 
 		pylab.colorbar()
-		pylab.title('learned noise - {} - {} - score: {} - epoch: {}'.format(self.datasetName, self.params['noise'],
-																			 np.round(test_score, 4), self.epoch))
+		pylab.title('noise dist; {}; p:{}; r:{}; f1:{}; e:{}'.format(self.params['noise'], np.round(prec, 2),
+																	 np.round(recall, 2), np.round(f1, 2), self.epoch))
 		pylab.tight_layout()
-		pylab.savefig(self.plotpath + plotname.format(self.epoch, np.round(test_score, 2)))
+		pylab.savefig(self.plotpath + plotname.format(self.datasetName.split('_')[0], self.epoch, np.round(f1, 3)))
 
 	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or \
@@ -647,7 +647,7 @@ class BiLSTM:
 			if verbose:
 				logging.info("computing F1 score.")
 				logging.info("Dev-Data: Prec: %.3f, Rec: %.3f, F1: %.4f" % (dev_pre, dev_rec, dev_f1))
-			return dev_f1
+			return dev_pre, dev_rec, dev_f1
 		else:
 			dev_acc = self.computeAcc(devMatrix)
 			if verbose:
@@ -664,7 +664,7 @@ class BiLSTM:
 			if verbose:
 				logging.info("computing F1 score.")
 				logging.info("Test-Data: Prec: %.3f, Rec: %.3f, F1: %.4f" % (test_pre, test_rec, test_f1))
-			return test_f1
+			return test_pre, test_rec, test_f1
 		else:
 			test_acc = self.computeAcc(testMatrix, noise)
 			if verbose:

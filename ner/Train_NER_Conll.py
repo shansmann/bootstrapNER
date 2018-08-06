@@ -43,14 +43,15 @@ rnd_matrix = np.random.rand(5,5)
 rnd_matrix = rnd_matrix/rnd_matrix.sum(axis=1)[:,None]
 
 #Parameters of the network
-params = {'dropout': [0.25, 0.25],
+params = {'dropout': [0.5, 0.5],
           'classifier': 'softmax',
-          'LSTM-Size': [100,75],
+          'LSTM-Size': [100,100],
           'optimizer': 'nadam',
+          'clipvalue': 5,
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 64,
-          'noise': sys.argv[1],
-          'pretraining': False}
+          'noise': False,}
+          #'pretraining': False}
 
 if len(sys.argv[1:]) == 2:
     weight_path = sys.argv[2]
@@ -91,4 +92,4 @@ model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, la
 model.storeResults("results/%s/%s/%s/scores.txt" % (datasetName, labelKey, params['noise']))
 model.create_base_model()
 model.prepare_model_for_evaluation()
-model.evaluate(20)
+model.evaluate(15)
