@@ -190,25 +190,25 @@ class BiLSTM:
 		merged = keras.layers.concatenate(concat_layers,
 										  name='concat_layer')
 
-		#dropout = Dropout(.5)(merged)
+		dropout = Dropout(.1)(merged)
 
 		bi_lstm_1 = Bidirectional(LSTM(params['LSTM-Size'][0],
 									   return_sequences=True,
 									   dropout=params['dropout'][0],
 									   recurrent_dropout=params['dropout'][1]),
-								  name="BiLSTM_1")(merged)
-
+								  name="BiLSTM_1")(dropout)
+		"""
 		bi_lstm_2 = Bidirectional(LSTM(params['LSTM-Size'][1],
 									   return_sequences=True,
 									   dropout=params['dropout'][0],
 									   recurrent_dropout=params['dropout'][1]),
 								  name="BiLSTM_2")(bi_lstm_1)
-
+		"""
 		self.num_classes = len(self.dataset['mappings'][self.labelKey])
 
 		output = TimeDistributed(Dense(self.num_classes,
 									   activation='softmax'),
-								 name='softmax_output')(bi_lstm_2)
+								 name='softmax_output')(bi_lstm_1)
 
 		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
 		if self.verboseBuild:
