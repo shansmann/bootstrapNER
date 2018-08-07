@@ -30,19 +30,19 @@ logger.addHandler(ch)
 
 # :: Train / Dev / Test-Files ::
 datasetName = 'product_corpus_man'
-dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
-labelKey = 'NER'
+dataColumns = {0:'tokens', 3:'NER_BIO', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
+labelKey = 'NER_BIO'
 
 embeddingsPath = '/mnt/hdd/datasets/glove_embeddings/glove.840B.300d.txt' #glove word embeddings
 
 #Parameters of the network
 params = {'dropout': [0.5, 0.5],
           'classifier': 'softmax',
-          'LSTM-Size': [100],
+          'LSTM-Size': [75],
           'optimizer': 'nadam',
           'clipvalue': 5,
           'charEmbeddings': 'LSTM',
-          'miniBatchSize': 64,
+          'miniBatchSize': 16,
           'noise': False}
 
 frequencyThresholdUnknownTokens = 5 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word

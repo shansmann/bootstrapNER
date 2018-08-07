@@ -28,7 +28,9 @@ class ProbabilityConstraint(Constraint):
         #                                          keepdims=True)))
 
         #weights = K.tf.nn.softmax(w, axis=1)
-        #weights = tf.exp(w) / tf.reduce_sum(tf.exp(w), 1)
+        #noisy_weights = w
+        #noisy_weights += K.random_normal_variable(shape=w.shape, mean=0, scale=.1, seed=42)
+        #weights = tf.exp(noisy_weights) / tf.reduce_sum(tf.exp(noisy_weights), 1)
 
         return weights
 

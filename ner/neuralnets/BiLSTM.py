@@ -584,7 +584,7 @@ class BiLSTM:
 				no_improvement_since += 1
 
 			if self.resultsOut != None:
-				self.resultsOut.write("\t".join(map(str, [epoch + 1, self.avgEpochLoss, dev_score, max_dev_score])))
+				self.resultsOut.write("\t".join(map(str, [epoch + 1, self.avgEpochLoss, dev_prec, dev_rec, dev_score, max_dev_score])))
 				self.resultsOut.write("\n")
 				self.resultsOut.flush()
 
@@ -603,7 +603,13 @@ class BiLSTM:
 				test_prec, test_rec, test_score = self.compute_test_score(testMatrix, noise=True)
 				self.logger.log_scalar(tag='f1_test', value=test_score, step=epochs)
 			else:
-				test_prec, test_rec, test_score = self.compute_test_score(testMatrix, noise=False)
+				test_prec, test_rec, test_score = self.compute_test_score(testMatrix, noise=False, test=True)
+
+			if self.resultsOut != None:
+				self.resultsOut.write("\n")
+				self.resultsOut.write("\t".join(map(str, ['test', 0, test_prec, test_rec, test_score, 0])))
+				self.resultsOut.write("\n")
+				self.resultsOut.flush()
 
 			if self.verboseBuild and self.params["noise"]:
 				self.epoch+=1
@@ -655,12 +661,12 @@ class BiLSTM:
 				logging.info("Dev-Data: Acc: %.3f" % (dev_acc))
 			return dev_acc
 
-	def compute_test_score(self, testMatrix, verbose=True, noise=False):
+	def compute_test_score(self, testMatrix, verbose=True, noise=False, test=False):
 		if self.labelKey.endswith('_BIO') or \
 				self.labelKey.endswith('_IOB') or \
 				self.labelKey.endswith('_IOBES') or \
 				self.labelKey == 'NER':
-			test_pre, test_rec, test_f1 = self.computeF1(testMatrix, noise)
+			test_pre, test_rec, test_f1 = self.computeF1(testMatrix, noise, test)
 			if verbose:
 				logging.info("computing F1 score.")
 				logging.info("Test-Data: Prec: %.3f, Rec: %.3f, F1: %.4f" % (test_pre, test_rec, test_f1))
@@ -672,7 +678,7 @@ class BiLSTM:
 				logging.info("Test-Data: Acc: %.3f" % (test_acc))
 			return test_acc
 
-	def computeF1(self, sentences, noise=False):
+	def computeF1(self, sentences, noise=False, test=False):
 		correctLabels = []
 		predLabels = []
 		paddedPredLabels = self.predictLabels(sentences, noise)
@@ -703,7 +709,7 @@ class BiLSTM:
 		# similar to sklearn.f1_score(average='micro'), excludes token 'O'
 		pre, rec, f1 = BIOF1Validation.compute_f1_token_basis(predLabels, correctLabels, 0)
 
-		if self.writeOutput and noise:
+		if self.writeOutput and (noise or test):
 			self.writeOutputToFile(sentences, predLabels, 'f1_{}.txt'.format(np.round(f1, 2)))
 
 		return pre, rec, f1
