@@ -197,18 +197,18 @@ class BiLSTM:
 									   dropout=params['dropout'][0],
 									   recurrent_dropout=params['dropout'][1]),
 								  name="BiLSTM_1")(dropout)
-		"""
+
 		bi_lstm_2 = Bidirectional(LSTM(params['LSTM-Size'][1],
 									   return_sequences=True,
 									   dropout=params['dropout'][0],
 									   recurrent_dropout=params['dropout'][1]),
 								  name="BiLSTM_2")(bi_lstm_1)
-		"""
+
 		self.num_classes = len(self.dataset['mappings'][self.labelKey])
 
 		output = TimeDistributed(Dense(self.num_classes,
 									   activation='softmax'),
-								 name='softmax_output')(bi_lstm_1)
+								 name='softmax_output')(bi_lstm_2)
 
 		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
 		if self.verboseBuild:
