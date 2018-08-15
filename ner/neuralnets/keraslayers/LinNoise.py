@@ -17,21 +17,27 @@ class ProbabilityConstraint(Constraint):
     def __init__(self):
         pass
 
-    def __call__(self, w):
-        w *= K.cast(K.greater_equal(w, 0.), K.floatx())
-        weights = w / (K.epsilon() + K.sqrt(K.sum(K.square(w),
+    def __call__(self, p):
+        min = K.min(p, axis=1, keepdims=True)
+        p = p - min * K.cast(min < 0., K.floatx())
+        max = K.max(p, axis=1, keepdims=True)
+        p = p / max
+        weights = p / (K.epsilon() + K.sum(p, axis=1, keepdims=True))
+        """
+        #w *= K.cast(K.greater_equal(w, 0.), K.floatx())
+        #weights = w / (K.epsilon() + K.sqrt(K.sum(K.square(w),
+         #                                         axis=1,
+         #                                         keepdims=True)))
+        non_neg = (w - K.min(w)) / (K.max(w) - K.min(w))
+        weights = non_neg / (K.epsilon() + K.sqrt(K.sum(K.square(non_neg),
                                                   axis=1,
                                                   keepdims=True)))
-        #non_neg = (w - K.min(w)) / (K.max(w) - K.min(w))
-        #weights = non_neg / (K.epsilon() + K.sqrt(K.sum(K.square(non_neg),
-        #                                          axis=1,
-        #                                          keepdims=True)))
 
         #weights = K.tf.nn.softmax(w, axis=1)
         #noisy_weights = w
         #noisy_weights += K.random_normal_variable(shape=w.shape, mean=0, scale=.1, seed=42)
         #weights = tf.exp(noisy_weights) / tf.reduce_sum(tf.exp(noisy_weights), 1)
-
+        """
         return weights
 
 class TraceRegularizer(Regularizer):

@@ -31,14 +31,14 @@ logger.addHandler(ch)
 # :: Train / Dev / Test-Files ::
 datasetName = 'product_corpus_man'
 dataColumns = {0:'tokens', 3:'NER_BIO', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
-labelKey = 'NER_BIO'
+labelKey = 'NER'
 
 embeddingsPath = '/mnt/hdd/datasets/glove_embeddings/glove.840B.300d.txt' #glove word embeddings
 
 #Parameters of the network
 params = {'dropout': [0.5, 0.5],
           'classifier': 'softmax',
-          'LSTM-Size': [75],
+          'LSTM-Size': [100, 100],
           'optimizer': 'nadam',
           'clipvalue': 5,
           'charEmbeddings': 'LSTM',
