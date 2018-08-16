@@ -42,7 +42,7 @@ params = {'dropout': [0.25, 0.25],
           'optimizer': 'nadam',
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 128,
-          'noise': 'trace'}
+          'noise': 'dropout'}
 
 frequencyThresholdUnknownTokens = 5 #If a token that is not in the pre-trained embeddings file appears at least 50 times in the train.txt, then a new embedding is generated for this word
 training_embeddings_only = False
@@ -70,7 +70,7 @@ print("Label key: ", labelKey)
 print("label mappings: {}".format(data['mappings'][labelKey]))
 
 
-model = neuralnets.BiLSTM.BiLSTM(params)
+model = neuralnets.BiLSTM.BiLSTM(params, datasetName, labelKey)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True

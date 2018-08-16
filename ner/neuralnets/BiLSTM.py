@@ -253,19 +253,19 @@ class BiLSTM:
 
 		if self.params['noise'] == 'dropout':
 			# dropout model
+			hadamard_jindal = TimeDistributed(Dropout(.1),
+											  name='hadamard_jindal')(output_old)
+
 			dense_jindal = TimeDistributed(Dense(self.num_classes,
 												 activation='linear',
 												 trainable=True,
 												 use_bias=False,
 												 kernel_initializer='identity'),
 										   name='dense_jindal',
-										   trainable=True)(output_old)
-
-			hadamard_jindal = TimeDistributed(Dropout(.1),
-											  name='hadamard_jindal')(dense_jindal)
+										   trainable=True)(hadamard_jindal)
 
 			output = TimeDistributed(Activation('softmax'),
-									 name='softmax_jindal')(hadamard_jindal)
+									 name='softmax_jindal')(dense_jindal)
 
 		elif self.params['noise'] == 'trace':
 			# trace model
