@@ -29,8 +29,8 @@ logger.addHandler(ch)
 ######################################################
 
 # :: Train / Dev / Test-Files ::
-datasetName = 'semeval'
-dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
+datasetName = 'semeval_man'
+dataColumns = {0:'tokens',3:'NER_BIO', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
 labelKey = 'NER'
 
 embeddingsPath = '/mnt/hdd/datasets/glove_embeddings/glove.840B.300d.txt' #glove word embeddings
@@ -71,7 +71,7 @@ print("Dataset:", datasetName)
 print(data['mappings'].keys())
 print(data['mappings'][labelKey])
 
-model = neuralnets.BiLSTM.BiLSTM(params)
+model = neuralnets.BiLSTM.BiLSTM(params, datasetName, labelKey)
 model.setMappings(embeddings, data['mappings'])
 model.setTrainDataset(data, labelKey)
 model.verboseBuild = True
@@ -79,4 +79,4 @@ model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, la
 model.storeResults("results/%s/%s/%s/scores.txt" % (datasetName, labelKey, params['noise']))
 model.create_base_model()
 model.prepare_model_for_evaluation()
-model.evaluate(15)
+model.evaluate(20)

@@ -35,6 +35,7 @@ from .logger import Logger
 
 # from .keraslayers.ChainCRF import ChainCRF
 import util.BIOF1Validation as BIOF1Validation
+import util.util as util
 
 if (sys.version_info > (3, 0)):
 	import pickle as pkl
@@ -190,7 +191,7 @@ class BiLSTM:
 		merged = keras.layers.concatenate(concat_layers,
 										  name='concat_layer')
 
-		dropout = Dropout(.1)(merged)
+		dropout = Dropout(params['dropout_input'] if params.get('dropout_input') else .1)(merged)
 
 		bi_lstm_1 = Bidirectional(LSTM(params['LSTM-Size'][0],
 									   return_sequences=True,
@@ -274,11 +275,11 @@ class BiLSTM:
 										   trainable=True,
 										   use_bias=False,
 										   kernel_constraint=ProbabilityConstraint(),
-										   #kernel_regularizer=TraceRegularizer(lamb=.01),
-										   kernel_regularizer=keras.regularizers.l2(0.1),
+										   kernel_regularizer=TraceRegularizer(lamb=.01),
+										   #kernel_regularizer=keras.regularizers.l2(0.1),
 										   kernel_initializer='identity'),
 									 name='linear_noise')(output_old)
-		elif self.params['noise'] == 'fix':
+		elif self.params['noise'] == 'fix_train':
 			# fix noise model
 			output = TimeDistributed(Dense(self.num_classes,
 										   activation='linear',
@@ -287,6 +288,16 @@ class BiLSTM:
 										   kernel_initializer=NumpyInitializer(self.params['noise_dist'])),
 									 name='fixed_noise',
 									 trainable=True)(output_old)
+
+		elif self.params['noise'] == 'fix_fix':
+			# fix noise model
+			output = TimeDistributed(Dense(self.num_classes,
+										   activation='linear',
+										   trainable=False,
+										   use_bias=False,
+										   kernel_initializer=NumpyInitializer(self.params['noise_dist'])),
+									 name='fixed_noise',
+									 trainable=False)(output_old)
 
 		new_model = Model(inputs=model.inputs, outputs=output)
 		if self.verboseBuild:
@@ -361,10 +372,13 @@ class BiLSTM:
 		for batch in iterator:
 			labels = batch[0]
 			nnInput = batch[1:]
-			batch_loss = self.model.train_on_batch(nnInput, labels)
+			batch_loss= self.model.train_on_batch(nnInput, labels)
 			epoch_losses.append(batch_loss)
 		logging.info('average epoch loss: {}'.format(np.mean(epoch_losses)))
 		self.avgEpochLoss = np.mean(epoch_losses)
+		prec, rec, f1 = self.compute_train_score(trainMatrix, verbose=True)
+
+		return prec, rec, f1
 
 	def predictLabels(self, sentences, noise=False):
 		#if self.model == None:
@@ -537,11 +551,19 @@ class BiLSTM:
 				logging.info("---- Pretraining Epoch %d ----" % (epoch + 1))
 
 			start_time = time.time()
-			self.trainModel()
+			train_prec, train_rec, train_f1 = self.trainModel()
 			self.epoch += 1
+
+			if self.resultsOut != None:
+				self.resultsOut.write("\t".join(
+					map(str, ['train:', epoch + 1, self.avgEpochLoss, train_prec, train_rec, train_f1, 0])))
+				self.resultsOut.write("\n")
+				self.resultsOut.flush()
+
 			time_diff = time.time() - start_time
 			total_train_time += time_diff
 			logging.info("%.2f sec for training (%.2f total)" % (time_diff, total_train_time))
+			logging.info('--- Eval on Dev ---')
 
 			start_time = time.time()
 			dev_prec, dev_rec, dev_score = self.compute_dev_score(devMatrix)
@@ -585,7 +607,7 @@ class BiLSTM:
 				no_improvement_since += 1
 
 			if self.resultsOut != None:
-				self.resultsOut.write("\t".join(map(str, [epoch + 1, self.avgEpochLoss, dev_prec, dev_rec, dev_score, max_dev_score])))
+				self.resultsOut.write("\t".join(map(str, ['dev:', epoch + 1, 0, dev_prec, dev_rec, dev_score, max_dev_score])))
 				self.resultsOut.write("\n")
 				self.resultsOut.flush()
 
@@ -644,6 +666,22 @@ class BiLSTM:
 																	 np.round(recall, 2), np.round(f1, 2), self.epoch))
 		pylab.tight_layout()
 		pylab.savefig(self.plotpath + plotname.format(self.datasetName.split('_')[0], self.epoch, np.round(f1, 3)))
+
+	def compute_train_score(self, trainMatrix, verbose=True):
+		if self.labelKey.endswith('_BIO') or \
+				self.labelKey.endswith('_IOB') or \
+				self.labelKey.endswith('_IOBES') or \
+				self.labelKey == 'NER':
+			dev_pre, dev_rec, dev_f1 = self.computeF1(trainMatrix)
+			if verbose:
+				logging.info("Train-Data: Prec: %.3f, Rec: %.3f, F1: %.4f" % (dev_pre, dev_rec, dev_f1))
+			return dev_pre, dev_rec, dev_f1
+		else:
+			dev_acc = self.computeAcc(trainMatrix)
+			if verbose:
+				logging.info("computing accuracy.")
+				logging.info("Train-Data: Acc: %.3f" % (dev_acc))
+			return dev_acc
 
 	def compute_dev_score(self, devMatrix, verbose=True):
 		if self.labelKey.endswith('_BIO') or \

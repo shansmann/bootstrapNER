@@ -48,7 +48,7 @@ params = {'dropout': [0.5, 0.5],
           'noise': False if sys.argv[1] == 'False' else sys.argv[1],
           'pretraining': False if sys.argv[1] == 'False' else True}
 
-if len(sys.argv[1:]) == 2 and sys.argv[1] == 'fix':
+if len(sys.argv[1:]) == 2 and (sys.argv[1] == 'fix_train' or sys.argv[1] == 'fix_fix'):
     weight_path = sys.argv[2]
     weights = np.loadtxt(weight_path)
     params['noise_dist'] = weights

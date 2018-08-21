@@ -78,4 +78,4 @@ model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, la
 model.storeResults("results/%s/%s/%s/scores.txt" % (datasetName, labelKey, params['noise']))
 model.create_base_model()
 model.prepare_model_for_evaluation()
-model.evaluate(15)
+model.evaluate(20)

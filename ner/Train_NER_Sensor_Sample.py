@@ -44,10 +44,10 @@ params = {'dropout': [0.5, 0.5],
           'clipvalue': 5,
           'charEmbeddings': 'LSTM',
           'miniBatchSize': 64,
-          'noise': sys.argv[1],
-          'pretraining': True}
+          'noise': False if sys.argv[1] == 'False' else sys.argv[1],
+          'pretraining': False if sys.argv[1] == 'False' else True}
 
-if len(sys.argv[1:]) == 2 and sys.argv[1] == 'fix':
+if len(sys.argv[1:]) == 2 and (sys.argv[1] == 'fix_train' or sys.argv[1] == 'fix_fix'):
     weight_path = sys.argv[2]
     weights = np.loadtxt(weight_path)
     params['noise_dist'] = weights
@@ -86,4 +86,4 @@ model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, la
 model.storeResults("results/%s/%s/%s/scores.txt" % (datasetName, labelKey, params['noise']))
 model.create_base_model()
 model.prepare_model_for_evaluation()
-model.evaluate(15)
+model.evaluate(20)
