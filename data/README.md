@@ -1,6 +1,6 @@
 # DS Evaluation
 
-## Product Corpus / Sensor Korpus (avg F1: 0.208)
+## Product Corpus / Sensor Corpus (avg F1: 0.208)
 
 | Entity  | Precision | Recall | F1 | Support |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
@@ -8,7 +8,7 @@
 | Brand  | 0.176  | 0.293 | 0.22 | 2497 |
 
 
-## Semeval Corpus / Science Korpus (avg F1: 0.202)
+## Semeval Corpus / Science Corpus (avg F1: 0.202)
 
 | Entity  | Precision | Recall | F1 | Support |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
