@@ -30,14 +30,15 @@ logger.addHandler(ch)
 
 # :: Train / Dev / Test-Files ::
 datasetName = 'sensor_sample_10'
-dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
+dataColumns = {0:'tokens', 3:'NER_BIO', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
 labelKey = 'NER'
 
 embeddingsPath = '/mnt/hdd/datasets/glove_embeddings/glove.840B.300d.txt' #glove word embeddings
 #embeddingsPath = 'glove.840B.300d.txt' #glove word embeddings
 
 #Parameters of the network
-params = {'dropout': [0.5, 0.5],
+params = {'dropout_input': .5,
+          'dropout': [0.5, 0.5],
           'classifier': 'softmax',
           'LSTM-Size': [100,100],
           'optimizer': 'nadam',
