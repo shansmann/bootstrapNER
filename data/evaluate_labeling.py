@@ -1,4 +1,4 @@
-from sklearn.metrics import confusion_matrix, f1_score
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support, f1_score
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
@@ -118,8 +118,8 @@ def compute_f1_token_basis(predictions, correct, O_Label):
 #man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/train.txt'
 #auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/train.txt'
 
-man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_man/train.txt'
-auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/semeval_auto/train.txt'
+man_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_man/train.txt'
+auto_path = '/Users/sebastianhansmann/Documents/Code/TU/mt/data/product_corpus_auto/train.txt'
 
 pred = read_tagging(auto_path)
 test = read_tagging(man_path)
@@ -130,13 +130,18 @@ flat_test = [item for sublist in test for item in sublist]
 print(Counter(flat_pred))
 print(Counter(flat_test))
 
-prec, rec, f1 = compute_f1_token_basis(pred, test, 'O')
-C = confusion_matrix(flat_test, flat_pred, labels=labels)
-plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=True, title='Confusion matrix: prec: {}; rec: {}; f1: {} - token basis'.format(np.round(prec, 2), np.round(rec, 2), np.around(f1, 2)), save=False)
+#prec, rec, f1 = compute_f1_token_basis(pred, test, 'O')
+#C = confusion_matrix(flat_test, flat_pred, labels=labels)
+#plot_confusion_matrix(C, labels, flat_test, flat_pred, normalize=True, title='Confusion matrix: prec: {}; rec: {}; f1: {} - token basis'.format(np.round(prec, 2), np.round(rec, 2), np.around(f1, 2)), save=False)
 
-#print(f1_score(flat_test, flat_pred, average='micro', labels=labels))
+print(f1_score(flat_test, flat_pred, average='micro', labels=['product', 'organization']))
 print(compute_f1_token_basis(pred, test, 'O'))
 
 #plot_histo(flat_test, ['product', 'organization'], 'man')
 #plot_histo(flat_pred, ['product', 'organization'], 'auto')
 
+precision, recall, fscore, support = precision_recall_fscore_support(flat_test, flat_pred, labels=['product', 'organization'])
+print(precision)
+print(recall)
+print(fscore)
+print(support)
