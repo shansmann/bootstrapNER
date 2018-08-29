@@ -35,3 +35,14 @@ for Named Entity Recognition".
 | science_corpus   | True             | Trace         | 0.8920      | 0.8802      | 0.2045      |
 | science_corpus   | True             | Fix Train     | 0.8858      | 0.8742      | 0.2041      |
 | science_corpus   | True             | Fix Fix       | 1      | 1      | 1      |
+
+
+
+### Dropout / Token Experiments
+
+| Experiment (10)         | Pretraining (5)  | Noise         | Silver Train F1   | Silver Dev F1    | Gold Test F1     |
+| ----------------------- | ---------------- | ------------- | ----------------- | ---------------- | ---------------- |
+| science_corpus .5 dropout   | False            | False         | 0.8065      | 0.8037     | 0.2097      |
+| science_corpus .5 dropout   | True             | Dropout       | 0.7884      | 0.7851      | 0.1251      |
+| science_corpus w/o token  | False            | False         | 0.7538      | 0.7438     | 0.1899      |
+| science_corpus w/o token  | True             | Dropout       | 0.7663      | 0.7522      | 0.1172      |
