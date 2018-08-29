@@ -31,7 +31,7 @@ logger.addHandler(ch)
 
 # :: Train / Dev / Test-Files ::
 datasetName = 'science_corpus'
-dataColumns = {0:'tokens', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
+dataColumns = {0:'tokens', 3:'NER_BIO', 4:'NER'} #Tab separated columns, column 1 contains the token, 2 the NER using BIO-encoding
 labelKey = 'NER'
 
 embeddingsPath = '/mnt/hdd/datasets/glove_embeddings/glove.840B.300d.txt' #glove word embeddings
@@ -87,4 +87,4 @@ model.modelSavePath = "models/%s/%s/%s/[DevScore]_[Epoch].h5" % (datasetName, la
 model.storeResults("results/%s/%s/%s/scores.txt" % (datasetName, labelKey, params['noise']))
 model.create_base_model()
 model.prepare_model_for_evaluation()
-model.evaluate(20)
+model.evaluate(10)

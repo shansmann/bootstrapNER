@@ -152,7 +152,7 @@ class BiLSTM:
 									 trainable=False,
 									 name='casing_emd')(casing_input)
 
-		concat_layers = [token_embedding, casing_embedding]
+		concat_layers = [casing_embedding]
 		# :: Character Embeddings ::
 		if params['charEmbeddings'] not in [None, "None", "none", False, "False", "false"]:
 			charset = self.dataset['mappings']['characters']
@@ -211,7 +211,7 @@ class BiLSTM:
 									   activation='softmax'),
 								 name='softmax_output')(bi_lstm_2)
 
-		model = Model(inputs=[token_input, casing_input, character_input], outputs=output)
+		model = Model(inputs=[casing_input, character_input], outputs=output)
 		if self.verboseBuild:
 			path = self.plotpath + 'basemodel.png'
 			plot_model(model, to_file=path, show_shapes=True, show_layer_names=True)
@@ -402,7 +402,7 @@ class BiLSTM:
 				predictions = [[dummyLabel]] * len(indices)  # Tag with dummy label
 			else:
 
-				features = ['tokens', 'casing'] + self.additionalFeatures
+				features = ['casing'] + self.additionalFeatures
 				inputData = {name: [] for name in features}
 
 				for idx in indices:
@@ -433,7 +433,7 @@ class BiLSTM:
 
 		for idx in idxRange:
 			labels = []
-			features = ['tokens', 'casing'] + self.additionalFeatures
+			features = ['casing'] + self.additionalFeatures
 
 			labels = dataset[idx][labelKey]
 			labels = [labels]
@@ -487,7 +487,7 @@ class BiLSTM:
 				numTrainExamples += len(tmpIndices)
 
 				labels = []
-				features = ['tokens', 'casing'] + self.additionalFeatures
+				features = ['casing'] + self.additionalFeatures
 				inputData = {name: [] for name in features}
 
 				for idx in tmpIndices:
